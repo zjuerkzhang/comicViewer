@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # filename: dirContentFetcher.py
 
-from distutils import filelist
 import web
 import os
 import json
