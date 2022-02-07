@@ -1,0 +1,16 @@
+[Unit]
+Description=Http server for comic viewer
+After=network.target
+
+[Service]
+User=%i
+Type=simple
+WorkingDirectory=/home/pi/github/comicViewer
+ExecStart=/usr/bin/python3 /home/pi/github/comicViewer/src/main.py 127.0.0.1:9001
+Restart=on-failure
+RestartSec=30
+
+ExecStop=/bin/kill -s QUIT $MAINPID
+
+[Install]
+WantedBy=multi-user.target
