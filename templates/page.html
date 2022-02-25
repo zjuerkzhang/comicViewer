@@ -196,6 +196,7 @@ $def with (pageInfo)
             var imageViewDiv = document.getElementById('imageView');
             imageViewDiv.innerHTML = htmlText;
             document.getElementById('currentPageId').innerHTML = imageName;
+            document.getElementById('targetImageIdx').value = (currentPageIdx + 1).toString();
         }
 
         function turnToPreviousImage()
@@ -269,7 +270,7 @@ $def with (pageInfo)
 </head>
 <body>
 <div id="navHeader">
-    <nav class="crumbs" >
+    <nav class="crumbs">
         <ol>
             <li class="crumb"><a href="">Home</a></li>
         </ol>

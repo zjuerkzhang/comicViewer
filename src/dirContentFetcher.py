@@ -8,7 +8,7 @@ import json
 self_dir = os.path.dirname(os.path.abspath(__file__))
 g_root_dir = self_dir + "/../comic/"
 skipped_file_dir_prefix = ['_']
-imageExtension = ['.jpg', '.gif', '.png']
+imageExtension = ['.jpg', '.gif', '.png', 'jpeg']
 
 def fileContainWantedPrefix(filename, prefixes = skipped_file_dir_prefix):
     for prefix in prefixes:
