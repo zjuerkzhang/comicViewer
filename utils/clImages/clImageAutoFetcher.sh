@@ -84,9 +84,14 @@ do
         #wget -q -T 30 $l -O images/$dirName/$ifName
         retryTimes=`seq 5`
         imgDownloadFailed=1
+        proxyFlag=""
         for i in $retryTimes
         do
-            curl -s -m 30 -x http://127.0.0.1:8080 -o images/$dirName/$ifName $l
+            if [ $i -gt 2 ]
+            then
+                proxyFlag="-x http://127.0.0.1:8080"
+            fi
+            curl -s -L -m 30 $proxyFlag -o images/$dirName/$ifName $l
             if [ $? -eq 0 ]
             then
                 imgDownloadFailed=0
