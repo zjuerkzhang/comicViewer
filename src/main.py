@@ -4,8 +4,10 @@ import web
 from dirPage import dirPage
 from dirContentFetcher import dirContentFetcher
 from imageFetcher import imageFetcher
+from kwpPage import kwpPage
 
 urls = (
+    '/kwp/(.*)', 'kwpPage',
     '/', 'dirPage',
     '/content', 'dirContentFetcher',
     '/image/(.+)', 'imageFetcher',
