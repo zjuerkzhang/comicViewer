@@ -192,7 +192,7 @@ $def with (pageInfo)
                 imageStyle = ' style="max-width:60%" '
             var htmlText = '<img ' +
                 imageStyle +
-                'src="' + getImageAbsolutePath(imageName) + '"></img>';
+                'src="' + getImageAbsolutePath(imageName) + '" onclick=turnToNextImage()></img>';
             var imageViewDiv = document.getElementById('imageView');
             imageViewDiv.innerHTML = htmlText;
             document.getElementById('currentPageId').innerHTML = imageName;
