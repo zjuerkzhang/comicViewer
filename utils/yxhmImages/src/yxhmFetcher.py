@@ -70,9 +70,11 @@ def fetchImagesFromSubPage(subPageLink, chapterIdx, chapterDir):
         return False
     imgs = contentDiv.find_all('img')
     if len(imgs) == 0:
-        logger.error("No <img> in <div class='pictures9593'> found [%s]" % subPageLink)
+        logger.error("No <img> for chapter [%d] in <div class='pictures9593'> found [%s]" % (subPageLink, chapterIdx))
         return False
-    logger.info("[%d] <img> in <div class='pictures9593'> found [%s]" % (len(imgs), subPageLink))
+    if not os.path.exists(chapterDir):
+        os.mkdir(chapterDir)
+    logger.info("[%d] <img> for chapter [%d] in <div class='pictures9593'> found [%s]" % (len(imgs), chapterIdx, subPageLink))
     imgIdx = 1
     for img in imgs:
         imgExt = img['src'].split('.')[-1]
@@ -112,9 +114,6 @@ def login():
     if r.status_code != 200:
         logger.error("Fail to login [%s]" % loginUrl)
         return False
-    #print(requestSession.cookies.get_dict())
-    #print(r.cookies.get_dict())
-    #print(r.text)
     print(r.cookies)
     cookies = r.cookies
     return True
@@ -161,8 +160,6 @@ def fetchComic(link, configData = {}):
     for chapterIdx in sorted(subPages.keys()):
         if chapterIdx > lastChapterIdx:
             chapterDir = comicDir + ("%03d/" % chapterIdx)
-            if not os.path.exists(chapterDir):
-                os.mkdir(chapterDir)
             ret = fetchImagesFromSubPage(subPages[chapterIdx], chapterIdx, chapterDir)
             if ret:
                 resultJson['latestChapterIdx'] = chapterIdx
