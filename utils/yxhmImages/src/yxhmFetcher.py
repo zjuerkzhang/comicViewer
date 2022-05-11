@@ -74,6 +74,10 @@ def fetchImagesFromSubPage(subPageLink, chapterIdx, chapterDir):
         return False
     if not os.path.exists(chapterDir):
         os.mkdir(chapterDir)
+    fileExistCount = len(os.listdir(chapterDir))
+    if fileExistCount >= len(imgs):
+        logger.info("[%d] images exist in [%s], more than image count from web [%d], no need download images" % (fileExistCount, chapterDir, len(imgs)))
+        return True
     logger.info("[%d] <img> for chapter [%d] in <div class='pictures9593'> found [%s]" % (len(imgs), chapterIdx, subPageLink))
     imgIdx = 1
     for img in imgs:
@@ -154,6 +158,8 @@ def fetchComic(link, configData = {}):
         if em == None:
             logger.info("No <em> under <li> [%s]" % li.prettify())
             continue
+        if len(re.findall('\d+', em.string)) <= 0:
+            continue
         chapterIdx = int(re.findall('\d+', em.string)[0])
         subPages[chapterIdx] = a['href']
     logger.info("Get total [%d] sub-pages" % len(subPages.keys()))
@@ -193,6 +199,8 @@ if __name__ == "__main__":
                 notifMsg = notifMsg + msg + '\n'
                 comicConfigData['latestChapterIdx'] = retData['latestChapterIdx']
                 configFileNeedUpdate = True
+                with open(configFilePath, 'w') as f:
+                    json.dump(jsonConfig, f, indent = 4, ensure_ascii = False)
             else:
                 logger.info("No update for Comic [%s], still in [%d]" % (comicConfigData['name'], comicConfigData['latestChapterIdx']))
         if configFileNeedUpdate:
@@ -202,8 +210,6 @@ if __name__ == "__main__":
                 'content': " - " + notifMsg
             }
             requests.post(notificationUrl, json = jsonMsg)
-            with open(configFilePath, 'w') as f:
-                json.dump(jsonConfig, f, indent = 4, ensure_ascii = False)
 
     elif len(sys.argv) == 2:
         comicLink = sys.argv[-1]
