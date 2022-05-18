@@ -72,7 +72,8 @@ def fetchImagesFromSubPage(subPageLink, chapterIdx, chapterDir):
     if len(imgs) == 0:
         logger.error("No <img> for chapter [%d] in <div class='pictures9593'> found [%s]" % (subPageLink, chapterIdx))
         return False
-    vipImg = list(filter(lambda x:x['src'].find('vip.png'), imgs))
+    logger.info("[%d] <img> for chapter [%d] in <div class='pictures9593'> found [%s]" % (len(imgs), chapterIdx, subPageLink))
+    vipImg = list(filter(lambda x:x['src'].find('vip.png') >=0, imgs))
     if len(vipImg) > 0:
         logger.info("This page [%d: %s] is for VIP, not fetch image" % (chapterIdx, subPageLink))
         return False
@@ -82,7 +83,6 @@ def fetchImagesFromSubPage(subPageLink, chapterIdx, chapterDir):
     if fileExistCount >= len(imgs):
         logger.info("[%d] images exist in [%s], more than image count from web [%d], no need download images" % (fileExistCount, chapterDir, len(imgs)))
         return True
-    logger.info("[%d] <img> for chapter [%d] in <div class='pictures9593'> found [%s]" % (len(imgs), chapterIdx, subPageLink))
     imgIdx = 1
     for img in imgs:
         imgExt = img['src'].split('.')[-1]
@@ -129,6 +129,22 @@ def login():
     cookies = r.cookies
     return True
 
+def getChapterLinks(mainPageSoup):
+    aList = mainPageSoup.find_all('a', attrs = {'class': 'fed-btns-info fed-rims-info fed-part-eone'})
+    chapterLinks = {}
+    for a in aList:
+        chapterIdx = -1
+        for content in a.contents:
+            nums = re.findall('第(\d+)', content)
+            if len(nums) > 0:
+                chapterIdx = int(nums[0])
+        if chapterIdx == -1:
+            logger.info("Fail to find the chapter number from <a> [%s]" % a.prettify())
+            continue
+        if chapterIdx not in chapterLinks.keys():
+            chapterLinks[chapterIdx] = a['href']
+    return chapterLinks
+
 def fetchComic(link, configData = {}):
     resultJson = {
             'name': '',
@@ -147,17 +163,7 @@ def fetchComic(link, configData = {}):
     if not os.path.exists(comicDir):
         os.mkdir(comicDir)
 
-    aList = soup.find_all('a', attrs = {'class': 'fed-btns-info fed-rims-info fed-part-eone'})
-    subPages = {}
-    for a in aList:
-        chapterIdx = -1
-        for content in a.contents:
-            nums = re.findall('第(\d+)', content)
-            if len(nums) > 0:
-                chapterIdx = int(nums[0])
-        if chapterIdx == -1:
-            logger.info("Fail to find the chapter number from <a> [%s]" % a.prettify())
-        subPages[chapterIdx] = a['href']
+    subPages = getChapterLinks(soup)
     logger.info("Get total [%d] sub-pages" % len(subPages.keys()))
     for chapterIdx in sorted(subPages.keys()):
         if chapterIdx > lastChapterIdx:
@@ -169,6 +175,20 @@ def fetchComic(link, configData = {}):
                 break
     return resultJson
 
+def fetchComicChapter(link, chapterIndex):
+    soup = getValidSoupFromLink(link)
+    comicName = getComicNameFromSoup(soup)
+    comicDir = targetRootDir + comicName + '/'
+    if not os.path.exists(comicDir):
+        os.mkdir(comicDir)
+    subPages = getChapterLinks(soup)
+    if chapterIndex in subPages.keys():
+        chapterDir = comicDir + ("%03d/" % chapterIndex)
+        ret = fetchImagesFromSubPage(subPages[chapterIndex], chapterIndex, chapterDir)
+        if not ret:
+            print("Fail to fetch images for chapter [%d] from page [%s]" % (chapterIndex, subPages[chapterIndex]))
+    else:
+        print("No chapter [%d] in page [%s]" % (chapterIndex, link))
 
 
 if __name__ == "__main__":
@@ -226,5 +246,9 @@ if __name__ == "__main__":
         jsonConfig['comics'].append(retData)
         with open(configFilePath, 'w') as f:
             json.dump(jsonConfig, f, indent = 4, ensure_ascii = False)
+    elif len(sys.argv) == 3:
+        comicLink = sys.argv[-2]
+        chapterIdx = int(sys.argv[-1])
+        fetchComicChapter(comicLink, chapterIdx)
     else:
         logger.error("Invalid parameter count")
