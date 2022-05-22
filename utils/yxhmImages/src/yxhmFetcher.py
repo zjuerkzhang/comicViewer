@@ -66,6 +66,10 @@ def fetchImagesFromSubPage(subPageLink, chapterIdx, chapterDir):
     #print(soup.prettify())
     contentDiv = soup.find('div', attrs = {'class': 'pictures9593'})
     if contentDiv == None:
+        bookDiv = soup.find('div', attrs = {'class': 'bookinfo'})
+        if bookDiv != None:
+            logger.info("Page [%s] is for VIP, stop fetching" % subPageLink)
+            return False
         logger.error("Fail to get <div class='pictures9593'> from [%s]" % subPageLink)
         return False
     imgs = contentDiv.find_all('img')
