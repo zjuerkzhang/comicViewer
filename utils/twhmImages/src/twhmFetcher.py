@@ -48,12 +48,15 @@ def downloadImg(imgUrl, targetImgPath):
     logger.debug("Download: %s --> %s" % (imgUrl, targetImgPath))
     downloadSuccess = False
     with open(targetImgPath, 'wb') as f:
-        r = imgSession.get(imgUrl)
-        if r.status_code != 200:
-            logger.error("Fail to fetch image from [%s]" % imgUrl)
-        else:
-            downloadSuccess = True
-            f.write(r.content)
+        try:
+            r = imgSession.get(imgUrl)
+            if r.status_code != 200:
+                logger.error("Fail to fetch image from [%s]" % imgUrl)
+            else:
+                downloadSuccess = True
+                f.write(r.content)
+        except:
+            logger.error("Fail to download image from [%s] to [%s]" % (imgUrl, targetImgPath))
     return downloadSuccess
 
 
