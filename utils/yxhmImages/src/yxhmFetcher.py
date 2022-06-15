@@ -126,32 +126,33 @@ def login():
     cookies = r.cookies
     return True
 
-def fetchComic(link, configData = {}):
-    resultJson = {
-            'name': '',
-            'link': link,
-            'latestChapterIdx': 0
-        }
-    if len(configData.keys()) > 0:
-        resultJson['name'] = configData['name']
-        resultJson['latestChapterIdx'] = configData['latestChapterIdx']
-    lastChapterIdx = resultJson['latestChapterIdx']
+def fetchComic(link, comicRootDir, comicInfo = {}):
+    if len(comicInfo.keys()) == 0:
+        comicInfo = {
+                'name': '',
+                'links': {
+                    'twhm': '',
+                    'yxhm': link
+                },
+                'latestChapterIdx': 0
+            }
+    lastChapterIdx = comicInfo['latestChapterIdx']
 
     soup = getValidSoupFromLink(link)
-    if resultJson['name'] == '':
-        resultJson['name'] = getComicNameFromSoup(soup)
-    comicDir = targetRootDir + resultJson['name'] + '/'
+    if comicInfo['name'] == '':
+        comicInfo['name'] = getComicNameFromSoup(soup)
+    comicDir = comicRootDir + '/' + comicInfo['name'] + '/'
     if not os.path.exists(comicDir):
         os.mkdir(comicDir)
 
     listUl = soup.find('ul', attrs = {'id': 'chapterlist'})
     if listUl == None:
         logger.error("Fail to get <ul id='chapterlist'> from [%s]" % link)
-        return resultJson
+        return comicInfo
     lis = listUl.find_all('li')
     if len(lis) == 0:
         logger.error("No <li> in <ul id='chapterlist'> found")
-        return resultJson
+        return comicInfo
     subPages = {}
     for li in lis:
         a = li.find('a')
@@ -172,41 +173,76 @@ def fetchComic(link, configData = {}):
             chapterDir = comicDir + ("%03d/" % chapterIdx)
             ret = fetchImagesFromSubPage(subPages[chapterIdx], chapterIdx, chapterDir)
             if ret:
-                resultJson['latestChapterIdx'] = chapterIdx
+                comicInfo['latestChapterIdx'] = chapterIdx
             else:
                 break
-    return resultJson
+    return comicInfo
 
+def getValidConfigContent():
+    if not os.path.exists(configFilePath):
+        logger.info("No configuration file found")
+        return None
+    with open(configFilePath, 'r') as f:
+        jsonConfig = json.load(f)
+    if 'targetDir' not in jsonConfig.keys():
+        logger.info("No key <targetDir> exists in config.json")
+        return None
+    if not os.path.exists(jsonConfig['targetDir']):
+        logger.info("No target directory referred by [%s]" % jsonConfig['targetDir'])
+        return None
+    return jsonConfig
 
+def getValidComicInfoContent(comicInfoFilePath):
+    if not os.path.exists(comicInfoFilePath):
+        logger.info("No info.json under [%s], skip" % comicInfoFilePath)
+        return None
+    with open(comicInfoFilePath, 'r') as f:
+        comicInfo = json.load(f)
+    if 'links' not in comicInfo.keys() or 'yxhm' not in comicInfo['links'].keys():
+        logger.info("No <links> or <links/yxhm> in [%s] " % comicInfoFilePath)
+        return None
+    link = comicInfo['links']['yxhm']
+    if link == '':
+        logger.info("No valid yxhm link in [%s] " % comicInfoFilePath)
+        return None
+    return comicInfo
 
 if __name__ == "__main__":
     login()
+    jsonConfig = getValidConfigContent()
+    if jsonConfig == None:
+        exit(1)
+    targetDir = jsonConfig['targetDir']
     if len(sys.argv) == 1:
         # load config.json to update the latest
         logger.info("===== Try to update to fetch the lastest chapters =====")
-        if not os.path.exists(configFilePath):
-            logger.info("No configuration file found")
-            exit(1)
-        with open(configFilePath, 'r') as f:
-            jsonConfig = json.load(f)
-        if 'comics' not in jsonConfig.keys():
-            logger.info("No comic to update")
-            exit(1)
+        entryList = os.listdir(targetDir)
+        comicDirList = list(filter(lambda x: os.path.isdir("%s/%s" % (targetDir, x)), entryList))
+
         configFileNeedUpdate = False
         notifMsg = ""
-        for comicConfigData in jsonConfig['comics']:
-            logger.info("----- Comic [%s] -----" % comicConfigData['name'])
-            retData = fetchComic(comicConfigData['link'], comicConfigData)
-            if retData['latestChapterIdx'] > comicConfigData['latestChapterIdx']:
-                msg = "Comic [%s] is updated from [%d] to [%d]" % (comicConfigData['name'], comicConfigData['latestChapterIdx'], retData['latestChapterIdx'])
+        for comicDir in comicDirList:
+            comicInfoFilePath = "%s/%s/info.json" % (targetDir, comicDir)
+            comicInfo = getValidComicInfoContent(comicInfoFilePath)
+            if comicInfo == None:
+                continue
+
+            link = comicInfo['links']['yxhm']
+            latestChapterIdx = comicInfo['latestChapterIdx'] if 'latestChapterIdx' in comicInfo.keys() else 0
+            name = comicInfo['name'] if 'name' in comicInfo.keys() else ''
+
+            logger.info("----- Update Comic [%s] from chapter [%d], [%s] -----" % (name, latestChapterIdx, link))
+            retData = fetchComic(link, targetDir, comicInfo)
+            if retData['latestChapterIdx'] > latestChapterIdx:
+                msg = "Comic [%s] is updated from [%d] to [%d]" % (retData['name'], latestChapterIdx, retData['latestChapterIdx'])
                 logger.info(msg)
                 notifMsg = notifMsg + msg + '\n'
-                comicConfigData['latestChapterIdx'] = retData['latestChapterIdx']
+                comicInfo['latestChapterIdx'] = retData['latestChapterIdx']
                 configFileNeedUpdate = True
-                with open(configFilePath, 'w') as f:
-                    json.dump(jsonConfig, f, indent = 4, ensure_ascii = False)
+                with open(comicInfoFilePath, 'w') as f:
+                    json.dump(retData, f, indent = 4, ensure_ascii = False)
             else:
-                logger.info("No update for Comic [%s], still in [%d]" % (comicConfigData['name'], comicConfigData['latestChapterIdx']))
+                logger.info("No update for Comic [%s], still in [%d]" % (retData['name'], retData['latestChapterIdx']))
         if configFileNeedUpdate:
             jsonMsg = {
                 'subject': 'Caoliu topic: 优秀韩漫',
@@ -218,21 +254,19 @@ if __name__ == "__main__":
     elif len(sys.argv) == 2:
         comicLink = sys.argv[-1]
         logger.info("Try to fetch new comic from %s" % comicLink)
-        if os.path.exists(configFilePath):
-            with open(configFilePath, 'r') as f:
-                jsonConfig = json.load(f)
-        else:
-            jsonConfig = {
-                'comics': []
-            }
-        existingComicLinks = list(map(lambda x: x['link'], jsonConfig['comics']))
-        if comicLink in existingComicLinks:
-            logger.info("New comic of [%s] exists" % comicLink)
-            print("New comic of [%s] exists, try to execute without link" % comicLink)
+        soup = getValidSoupFromLink(comicLink)
+        comicName = getComicNameFromSoup(soup)
+        if comicName == '':
+            print("No valid comic by [%s]" % comicLink)
             exit(1)
-        retData = fetchComic(comicLink)
-        jsonConfig['comics'].append(retData)
-        with open(configFilePath, 'w') as f:
-            json.dump(jsonConfig, f, indent = 4, ensure_ascii = False)
+        comicDir = "%s/%s" % (targetDir, comicName)
+        if os.path.exists(comicDir):
+            print("[%s] by [%s] exists, no need manual update" % (comicName, comicLink))
+            exit(0)
+        retData = fetchComic(comicLink, targetDir)
+        if retData['latestChapterIdx'] > 0:
+            infoJsonPath = "%s/%s/info.json" % (targetDir, comicName)
+            with open(infoJsonPath, 'w') as f:
+                json.dump(retData, f, indent = 4, ensure_ascii = False)
     else:
         logger.error("Invalid parameter count")
