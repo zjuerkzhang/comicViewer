@@ -155,7 +155,8 @@ def fetchComic(link, comicRootDir, comicInfo = {}):
                 'name': '',
                 'links': {
                     'twhm': link,
-                    'yxhm': ''
+                    'yxhm': '',
+                    '5wc': ''
                 },
                 'latestChapterIdx': 0
             }
