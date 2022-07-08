@@ -46,18 +46,20 @@ def getValidSoupFromLink(link):
 
 def downloadImg(imgUrl, targetImgPath):
     logger.debug("Download: %s --> %s" % (imgUrl, targetImgPath))
-    downloadSuccess = False
+    content = None
+    try:
+        r = imgSession.get(imgUrl, verify = False)
+        if r.status_code != 200:
+            logger.error("Fail to fetch image from [%s], status_code = [%d]" % (imgUrl, r.status_code))
+        else:
+            content = r.content
+    except:
+        logger.error("Fail to download image from [%s] to [%s]" % (imgUrl, targetImgPath))
+    if content == None:
+        return False
     with open(targetImgPath, 'wb') as f:
-        try:
-            r = imgSession.get(imgUrl)
-            if r.status_code != 200:
-                logger.error("Fail to fetch image from [%s]" % imgUrl)
-            else:
-                downloadSuccess = True
-                f.write(r.content)
-        except:
-            logger.error("Fail to download image from [%s] to [%s]" % (imgUrl, targetImgPath))
-    return downloadSuccess
+        f.write(content)
+    return True
 
 
 def fetchImagesFromSubPage(subPageLink, chapterIdx, chapterDir):
@@ -87,14 +89,15 @@ def fetchImagesFromSubPage(subPageLink, chapterIdx, chapterDir):
         logger.info("[%d] images exist in [%s], more than image count from web [%d], no need download images" % (fileExistCount, chapterDir, len(imgs)))
         return True
     imgIdx = 1
+    imageDledCount = 0
     for img in imgs:
         imgExt = img['src'].split('.')[-1]
         targetImgPath = chapterDir + ("%03d.%s" % (imgIdx, imgExt))
         ret = downloadImg(img['src'], targetImgPath)
-        if not ret:
-            logger.info("Fail to download image from [%s] to [%s]" % (img['src'], targetImgPath))
+        if ret:
+            imageDledCount = imageDledCount + 1
         imgIdx = imgIdx + 1
-    return True
+    return (imageDledCount == len(imgs))
 
 def getComicNameFromSoup(soup):
     h1 = soup.find('h1', attrs = {"class": "fed-part-eone fed-font-xvi"})
