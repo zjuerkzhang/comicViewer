@@ -182,6 +182,12 @@ def fetchComic(link, comicRootDir, comicInfo = {}):
             if ret:
                 comicInfo['latestChapterIdx'] = chapterIdx
             else:
+                jsonMsg = {
+                    'subject': 'Caoliu topic: 骚客漫画',
+                    'channel': 'telegram',
+                    'content': " - Fail to update chapter [%d] of [%s]" % (chapterIdx, comicInfo['name'])
+                }
+                requests.post(notificationUrl, json = jsonMsg)
                 break
     return comicInfo
 
@@ -243,7 +249,7 @@ if __name__ == "__main__":
             if retData['latestChapterIdx'] > latestChapterIdx:
                 msg = "Comic [%s] is updated from [%d] to [%d]" % (retData['name'], latestChapterIdx, retData['latestChapterIdx'])
                 logger.info(msg)
-                notifMsg = notifMsg + msg + '\n'
+                notifMsg = "%s - %s\n" % (notifMsg, msg)
                 comicInfo['latestChapterIdx'] = retData['latestChapterIdx']
                 configFileNeedUpdate = True
                 with open(comicInfoFilePath, 'w') as f:
@@ -254,7 +260,7 @@ if __name__ == "__main__":
             jsonMsg = {
                 'subject': 'Caoliu topic: 骚客漫画',
                 'channel': 'telegram',
-                'content': " - " + notifMsg
+                'content': notifMsg
             }
             requests.post(notificationUrl, json = jsonMsg)
 
