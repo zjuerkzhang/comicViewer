@@ -56,10 +56,16 @@ def downloadImg(imgUrl, targetImgPath):
             f.write(r.content)
     return downloadSuccess
 
+def generateUrl(subPagelink):
+    if subPagelink.find("http://") == 0 or subPagelink.find("https://") == 0:
+        return subPagelink
+    if subPagelink.find(host) == 0 or subPagelink.find("www.yxhm99.com") == 0:
+        return "https://" + subPagelink
+    return site + subPagelink
 
 def fetchImagesFromSubPage(subPageLink, chapterIdx, chapterDir):
     logger.debug("subPageLink: [%s], chapterId: [%d]" % (subPageLink, chapterIdx))
-    url = subPageLink if subPageLink.find(site) == 0 else ( "https://" + subPageLink if subPageLink.find(host) == 0 else (site + subPageLink) )
+    url = generateUrl(subPageLink)
     soup = getValidSoupFromLink(url)
     if soup == None:
         return False
