@@ -85,14 +85,19 @@ def fetchImagesFromSubPage(subPageLink, chapterIdx, chapterDir):
     if fileExistCount >= len(imgs):
         logger.info("[%d] images exist in [%s], more than image count from web [%d], no need download images" % (fileExistCount, chapterDir, len(imgs)))
         return True
-    imgIdx = 1
+    imgIdx = 0
+    failCount = 0
     for img in imgs:
+        imgIdx = imgIdx + 1
         imgExt = img['src'].split('.')[-1]
         targetImgPath = chapterDir + ("%03d.%s" % (imgIdx, imgExt))
         ret = downloadImg(img['src'], targetImgPath)
         if not ret:
             logger.info("Fail to download image from [%s] to [%s]" % (img['src'], targetImgPath))
-        imgIdx = imgIdx + 1
+            failCount = failCount + 1
+    if failCount >= int(imgIdx/10):
+        logger.info("Fail to download [%d/%d] images from [%s]" % (failCount, imgIdx, img['src']))
+        return False
     return True
 
 def getComicNameFromSoup(soup):
@@ -226,7 +231,9 @@ def getValidComicInfoContent(comicInfoFilePath):
     return comicInfo
 
 if __name__ == "__main__":
-    login()
+    if not login():
+        logger.error("Login Failed")
+        exit(1)
     jsonConfig = getValidConfigContent()
     if jsonConfig == None:
         exit(1)

@@ -15,7 +15,7 @@ DATEFMT = '%Y-%m-%d %H:%M:%S'
 logging.basicConfig(filename = logFilePath, level = logging.INFO, format = FORMAT, datefmt = DATEFMT)
 
 logger = logging.getLogger('BasicFetcher')
-host = "yxhm.cc"
+host = "www.yxhm99.com"
 site = "https://" + host
 targetRootDir = "%s/../images/" % selfDir
 configFilePath = "%s/../config/config.json" % selfDir
@@ -37,7 +37,7 @@ cookies = None
 def getValidSoupFromLink(link):
     r = requestSession.get(link, headers= headers, cookies=cookies)
     if r.status_code != 200:
-        logger.error("Fail to fetch content from [%s]" % link)
+        logger.error("Fail to fetch content from [%s], status_code: [%d]" % (link, r.status_code))
         return None
     soup = bs(r.text, 'html5lib')
     if soup == None:
@@ -106,7 +106,7 @@ def getComicNameFromSoup(soup):
 
 def login():
     global cookies
-    requestSession.post("https://yxhm.cc/member/index_do.php?fmdo=login&doPost=exit", headers=headers)
+    requestSession.post("https://%s/member/index_do.php?fmdo=login&doPost=exit" % host, headers=headers)
     loginPostData = {
         "fmdo": "login",
         "dopost": "login",
@@ -115,7 +115,7 @@ def login():
         "userid": "clinusalap",
         "pwd": "XkpBqVVJFUe7827"
     }
-    loginUrl = "https://yxhm.cc/member/index_do.php?"
+    loginUrl = "https://%s/member/index_do.php?" % host
     firstPara = True
     for key in loginPostData.keys():
         if not firstPara:
@@ -215,7 +215,9 @@ def getValidComicInfoContent(comicInfoFilePath):
     return comicInfo
 
 if __name__ == "__main__":
-    login()
+    if not login():
+        logger.error("Login Failed")
+        exit(1)
     jsonConfig = getValidConfigContent()
     if jsonConfig == None:
         exit(1)
