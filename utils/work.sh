@@ -1,10 +1,10 @@
 #!/bin/sh
 
 scripts="/home/pi/github/comicViewer/utils/clImages/clImageAutoFetcher.sh \
+        /home/pi/github/comicViewer/utils/hm7mjImages/work.sh \
         /home/pi/github/comicViewer/utils/hm5wcImages/work.sh \
         /home/pi/github/comicViewer/utils/twhmImages/work.sh \
-        /home/pi/github/comicViewer/utils/yxhmImages/work.sh \
-        /home/pi/github/comicViewer/utils/hm7mjImages/work.sh"
+        /home/pi/github/comicViewer/utils/yxhmImages/work.sh"
 
 for s in $scripts
 do

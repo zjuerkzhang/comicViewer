@@ -114,7 +114,7 @@ def fetchImagesFromSubPage(chapterId, chapterIdx, chapterDir):
     fileExistCount = len(os.listdir(chapterDir))
     if fileExistCount >= len(imgs):
         logger.info("[%d] images exist in [%s], more than image count from web [%d], no need download images" % (fileExistCount, chapterDir, len(imgs)))
-        return True
+        return False
     imageDledCount = 0
     for img in imgs:
         imgExt = img['img'].split('.')[-1]
