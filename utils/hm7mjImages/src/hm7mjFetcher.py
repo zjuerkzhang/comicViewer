@@ -96,25 +96,34 @@ def downloadImg(imgUrl, targetImgPath):
 
 
 def fetchImagesFromSubPage(chapterId, chapterIdx, chapterDir):
+    errorMsg = ''
     subPageLink = getChapterJsonLink(chapterId)
     logger.debug("subPageLink: [%s], chapterId: [%d]" % (subPageLink, chapterIdx))
     imageJson = getValidJsonDataFromLink(subPageLink)
     if 'data' not in imageJson.keys():
-        logger.error("No attribute 'data' in imageJson from url: [%s]" % subPageLink)
-        return False
+        errorMsg = "No attribute 'data' in imageJson from url: [%s]" % subPageLink
+        logger.error(errorMsg)
+        return (False, errorMsg)
     if len(imageJson["data"]) != 1:
-        logger.error("imageJson['data'] is empty list from url: [%s]" % subPageLink)
-        return False
+        errorMsg = "imageJson['data'] is empty list from url: [%s]" % subPageLink
+        logger.error(errorMsg)
+        return (False, errorMsg)
+    if "gold" in imageJson["data"][0].keys() and imageJson["data"][0]["gold"].find('VIP') ==0:
+        errorMsg = "The page is for VIP. url: [%s]" % subPageLink
+        logger.info(errorMsg)
+        return (False, '')
     if 'list' not in imageJson["data"][0].keys():
-        logger.error("No attribute 'data' in imageJson['data'][0] from url: [%s]" % subPageLink)
-        return False
+        errorMsg = "No attribute 'data' in imageJson['data'][0] from url: [%s]" % subPageLink
+        logger.error(errorMsg)
+        return (False, errorMsg)
     imgs = imageJson["data"][0]["list"]
     if not os.path.exists(chapterDir):
         os.mkdir(chapterDir)
     fileExistCount = len(os.listdir(chapterDir))
     if fileExistCount >= len(imgs):
-        logger.info("[%d] images exist in [%s], more than image count from web [%d], no need download images" % (fileExistCount, chapterDir, len(imgs)))
-        return False
+        errorMsg = "[%d] images exist in [%s], more than image count from web [%d], no need download images" % (fileExistCount, chapterDir, len(imgs))
+        logger.info(errorMsg)
+        return (False, errorMsg)
     imageDledCount = 0
     for img in imgs:
         imgExt = img['img'].split('.')[-1]
@@ -122,7 +131,9 @@ def fetchImagesFromSubPage(chapterId, chapterIdx, chapterDir):
         ret = downloadImg(img['img'], targetImgPath)
         if ret:
             imageDledCount = imageDledCount + 1
-    return (imageDledCount == len(imgs))
+    if imageDledCount != len(imgs):
+        errorMsg = "Only [%d/%d] images downloaded successfully for [%s]" % (imageDledCount, len(imgs), subPageLink)
+    return ((imageDledCount == len(imgs)), errorMsg)
 
 def getComicNameFromSoup(soup):
     h1 = soup.find('h1')
@@ -200,16 +211,17 @@ def fetchComic(link, comicRootDir, comicInfo = {}):
     for chapterIdx in sorted(subPages.keys()):
         if chapterIdx > lastChapterIdx:
             chapterDir = comicDir + ("%03d/" % chapterIdx)
-            ret = fetchImagesFromSubPage(subPages[chapterIdx], chapterIdx, chapterDir)
+            (ret, msg) = fetchImagesFromSubPage(subPages[chapterIdx], chapterIdx, chapterDir)
             if ret:
                 comicInfo['latestChapterIdx'] = chapterIdx
             else:
-                jsonMsg = {
-                    'subject': 'Caoliu topic: 乐漫网',
-                    'channel': 'telegram',
-                    'content': " - Fail to update chapter [%d] of [%s]" % (chapterIdx, comicInfo['name'])
-                }
-                requests.post(notificationUrl, json = jsonMsg)
+                if msg != '':
+                    jsonMsg = {
+                        'subject': 'Caoliu topic: 乐漫网',
+                        'channel': 'telegram',
+                        'content': " - Fail to update chapter [%d] of [%s]. \n --- %s" % (chapterIdx, comicInfo['name'], msg)
+                    }
+                    requests.post(notificationUrl, json = jsonMsg)
                 break
     return comicInfo
 

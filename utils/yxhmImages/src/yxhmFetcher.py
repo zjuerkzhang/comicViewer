@@ -87,15 +87,18 @@ def fetchImagesFromSubPage(subPageLink, chapterIdx, chapterDir):
     fileExistCount = len(os.listdir(chapterDir))
     if fileExistCount >= len(imgs):
         logger.info("[%d] images exist in [%s], more than image count from web [%d], no need download images" % (fileExistCount, chapterDir, len(imgs)))
-        return True
+        return False
     logger.info("[%d] <img> for chapter [%d] in <div class='pictures9593'> found [%s]" % (len(imgs), chapterIdx, subPageLink))
     imgIdx = 1
+    imageDledCount = 0
     for img in imgs:
         imgExt = img['src'].split('.')[-1]
         targetImgPath = chapterDir + ("%03d.%s" % (imgIdx, imgExt))
         ret = downloadImg(img['src'], targetImgPath)
+        if ret:
+            imageDledCount = imageDledCount + 1
         imgIdx = imgIdx + 1
-    return True
+    return (imageDledCount == len(imgs))
 
 def getComicNameFromSoup(soup):
     b = soup.find('b', attrs = {"class": "name"})

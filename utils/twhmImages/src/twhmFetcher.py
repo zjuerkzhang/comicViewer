@@ -15,11 +15,15 @@ DATEFMT = '%Y-%m-%d %H:%M:%S'
 logging.basicConfig(filename = logFilePath, level = logging.INFO, format = FORMAT, datefmt = DATEFMT)
 
 logger = logging.getLogger('BasicFetcher')
-host = "twhm.net"
+host = "tuwenhanman.com"
 site = "https://" + host
 configFilePath = "%s/../config/config.json" % selfDir
 notificationUrl="https://bloghz.ddns.net/cmd/notify/"
 
+gProxies = {
+    'http': 'http://127.0.0.1:8080',
+    'https': 'http://127.0.0.1:8080'
+}
 requestSession = requests.Session()
 imgSession = requests.Session()
 headers = {
@@ -34,7 +38,7 @@ headers = {
 cookies = None
 
 def getValidSoupFromLink(link):
-    r = requestSession.get(link, headers= headers, cookies=cookies)
+    r = requestSession.get(link, headers= headers, cookies=cookies, proxies=gProxies)
     if r.status_code != 200:
         logger.error("Fail to fetch content from [%s]" % link)
         return None
@@ -48,9 +52,9 @@ def downloadImg(imgUrl, targetImgPath):
     downloadSuccess = False
     with open(targetImgPath, 'wb') as f:
         try:
-            r = imgSession.get(imgUrl)
+            r = imgSession.get(imgUrl, proxies=gProxies)
             if r.status_code != 200:
-                logger.error("Fail to fetch image from [%s]" % imgUrl)
+                logger.error("Fail to download image from [%s] to [%s]" % (imgUrl, targetImgPath))
             else:
                 downloadSuccess = True
                 f.write(r.content)
@@ -60,45 +64,50 @@ def downloadImg(imgUrl, targetImgPath):
 
 
 def fetchImagesFromSubPage(subPageLink, chapterIdx, chapterDir):
+    errorMsg = ''
     logger.debug("subPageLink: [%s], chapterId: [%d]" % (subPageLink, chapterIdx))
     url = subPageLink if subPageLink.find(site) == 0 else ( "https://" + subPageLink if subPageLink.find(host) == 0 else (site + subPageLink) )
     soup = getValidSoupFromLink(url)
     if soup == None:
-        return False
+        errorMsg = "Fail to get soup from url: [%s]" % subPageLink
+        logger.error(errorMsg)
+        return (False, errorMsg)
     #print(soup.prettify())
     contentDiv = soup.find('div', attrs = {'style': 'max-width:720px;margin:0 auto;text:center;'})
     if contentDiv == None:
-        logger.error("Fail to get <div style='max-width:720px;margin:0 auto;text:center;'> from [%s]" % subPageLink)
-        return False
+        errorMsg = "Fail to get <div style='max-width:720px;margin:0 auto;text:center;'> from [%s]" % subPageLink
+        logger.error(errorMsg)
+        return (False, errorMsg)
     imgs = contentDiv.find_all('img')
     if len(imgs) == 0:
-        logger.error("No <img> for chapter [%d] in <div class='pictures9593'> found [%s]" % (subPageLink, chapterIdx))
-        return False
+        errorMsg = "No <img> for chapter [%d] in <div class='pictures9593'> found [%s]" % (subPageLink, chapterIdx)
+        logger.error(errorMsg)
+        return (False, errorMsg)
     logger.info("[%d] <img> for chapter [%d] in <div class='pictures9593'> found [%s]" % (len(imgs), chapterIdx, subPageLink))
     vipImg = list(filter(lambda x:x['src'].find('vip.png') >=0, imgs))
     if len(vipImg) > 0:
-        logger.info("This page [%d: %s] is for VIP, not fetch image" % (chapterIdx, subPageLink))
-        return False
+        errorMsg = "This page [%d: %s] is for VIP, not fetch image" % (chapterIdx, subPageLink)
+        logger.info(errorMsg)
+        return (False, '')
     if not os.path.exists(chapterDir):
         os.mkdir(chapterDir)
     fileExistCount = len(os.listdir(chapterDir))
     if fileExistCount >= len(imgs):
-        logger.info("[%d] images exist in [%s], more than image count from web [%d], no need download images" % (fileExistCount, chapterDir, len(imgs)))
-        return True
+        errorMsg = "[%d] images exist in [%s], more than image count from web [%d], no need download images" % (fileExistCount, chapterDir, len(imgs))
+        logger.info(errorMsg)
+        return (False, errorMsg)
     imgIdx = 0
-    failCount = 0
+    imageDledCount = 0
     for img in imgs:
         imgIdx = imgIdx + 1
         imgExt = img['src'].split('.')[-1]
         targetImgPath = chapterDir + ("%03d.%s" % (imgIdx, imgExt))
         ret = downloadImg(img['src'], targetImgPath)
-        if not ret:
-            logger.info("Fail to download image from [%s] to [%s]" % (img['src'], targetImgPath))
-            failCount = failCount + 1
-    if failCount >= int(imgIdx/10):
-        logger.info("Fail to download [%d/%d] images from [%s]" % (failCount, imgIdx, img['src']))
-        return False
-    return True
+        if ret:
+            imageDledCount = imageDledCount + 1
+    if imageDledCount != len(imgs):
+        errorMsg = "Only [%d/%d] images downloaded successfully for [%s]" % (imageDledCount, len(imgs), subPageLink)
+    return ((imageDledCount == len(imgs)), errorMsg)
 
 def getComicNameFromSoup(soup):
     h1 = soup.find('h1', attrs = {"class": "fed-part-eone fed-font-xvi"})
@@ -113,15 +122,16 @@ def getComicNameFromSoup(soup):
 
 def login():
     global cookies
-    requestSession.post("https://www.twhm.net/member/index_do.php?fmdo=login&dopost=exit", headers=headers)
+    #loginOutUrl = "https://%s/member/index_do.php?fmdo=login&dopost=exit" % host
+    #requestSession.post("https://www.twhm.net/member/index_do.php?fmdo=login&dopost=exit", headers=headers, proxies=gProxies)
     loginPostData = {
         "action": "login",
         "keeptime": str(3600 * 24),
-        "gourl": "https://www.twhm.net/",
+        "gourl": ("https:/%s/" % host),
         "user_name": "cruslefrat",
         "user_pwd": "9gU9CNBhMWH7Azd"
     }
-    loginUrl = "https://www.twhm.net/member/ajax_login.php?"
+    loginUrl = "https://%s/member/ajax_login.php?" % host
     firstPara = True
     for key in loginPostData.keys():
         if not firstPara:
@@ -130,7 +140,7 @@ def login():
             firstPara = False
         loginUrl = loginUrl + ("%s=%s" % (key, loginPostData[key]))
     print(loginUrl)
-    r = requestSession.post(loginUrl, headers= headers)
+    r = requestSession.post(loginUrl, headers= headers, proxies=gProxies)
     if r.status_code != 200:
         logger.error("Fail to login [%s]" % loginUrl)
         return False
@@ -179,10 +189,17 @@ def fetchComic(link, comicRootDir, comicInfo = {}):
     for chapterIdx in sorted(subPages.keys()):
         if chapterIdx > lastChapterIdx:
             chapterDir = comicDir + ("%03d/" % chapterIdx)
-            ret = fetchImagesFromSubPage(subPages[chapterIdx], chapterIdx, chapterDir)
+            (ret, errorMsg) = fetchImagesFromSubPage(subPages[chapterIdx], chapterIdx, chapterDir)
             if ret:
                 comicInfo['latestChapterIdx'] = chapterIdx
             else:
+                if errorMsg != '':
+                    jsonMsg = {
+                        'subject': 'Caoliu topic: 图文韩漫',
+                        'channel': 'telegram',
+                        'content': " - Fail to update chapter [%d] of [%s]. \n --- %s" % (chapterIdx, comicInfo['name'], msg)
+                    }
+                    requests.post(notificationUrl, json = jsonMsg)
                 break
     return comicInfo
 
@@ -195,7 +212,7 @@ def fetchComicChapter(link, comicRootDir, chapterIndex):
     subPages = getChapterLinks(soup)
     if chapterIndex in subPages.keys():
         chapterDir = comicDir + ("%03d/" % chapterIndex)
-        ret = fetchImagesFromSubPage(subPages[chapterIndex], chapterIndex, chapterDir)
+        (ret, errorMsg) = fetchImagesFromSubPage(subPages[chapterIndex], chapterIndex, chapterDir)
         if not ret:
             print("Fail to fetch images for chapter [%d] from page [%s]" % (chapterIndex, subPages[chapterIndex]))
     else:
@@ -253,6 +270,8 @@ if __name__ == "__main__":
                 continue
 
             link = comicInfo['links']['twhm']
+            link = link.replace("www.twhm.net", host)
+            comicInfo['links']['twhm'] = link
             latestChapterIdx = comicInfo['latestChapterIdx'] if 'latestChapterIdx' in comicInfo.keys() else 0
             name = comicInfo['name'] if 'name' in comicInfo.keys() else ''
 
