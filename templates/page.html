@@ -163,6 +163,7 @@ $def with (pageInfo)
 
             var url = document.location.toString();
             var pathWithoutNginxRedirectPath = url.split(nginxRedirectPath)[1];
+            var totalViewUrl = nginxRedirectPath + pathWithoutNginxRedirectPath;
 
             if (currentPageIdx >= imageNameList.length)
             {
@@ -190,7 +191,8 @@ $def with (pageInfo)
             var imageStyle = ' style="max-width:100%" ';
             if (detectDeviceType() == desktop)
                 imageStyle = ' style="max-width:60%" '
-            var htmlText = '<img ' +
+            var htmlText = '<div><a href="' + totalViewUrl + '?allImgs=true">统览</a></div>'
+            htmlText = htmlText + '<img ' +
                 imageStyle +
                 'src="' + getImageAbsolutePath(imageName) + '" onclick=turnToNextImage()></img>';
             var imageViewDiv = document.getElementById('imageView');

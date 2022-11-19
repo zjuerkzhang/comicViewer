@@ -54,7 +54,7 @@ def downloadImg(imgUrl, targetImgPath):
         try:
             r = imgSession.get(imgUrl, proxies=gProxies)
             if r.status_code != 200:
-                logger.error("Fail to download image from [%s] to [%s]" % (imgUrl, targetImgPath))
+                logger.error("Fail to download image from [%s] to [%s], status_code = [%d]" % (imgUrl, targetImgPath, r.status_code))
             else:
                 downloadSuccess = True
                 f.write(r.content)
@@ -197,7 +197,7 @@ def fetchComic(link, comicRootDir, comicInfo = {}):
                     jsonMsg = {
                         'subject': 'Caoliu topic: 图文韩漫',
                         'channel': 'telegram',
-                        'content': " - Fail to update chapter [%d] of [%s]. \n --- %s" % (chapterIdx, comicInfo['name'], msg)
+                        'content': " - Fail to update chapter [%d] of [%s]. \n --- %s" % (chapterIdx, comicInfo['name'], errorMsg)
                     }
                     requests.post(notificationUrl, json = jsonMsg)
                 break

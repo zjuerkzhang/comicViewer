@@ -80,10 +80,16 @@ def downloadImg(imgUrl, targetImgPath):
     logger.debug("Download: %s --> %s" % (imgUrl, targetImgPath))
     content = None
     try:
-        time.sleep(random.random())
-        r = imgSession.get(imgUrl, verify = False, timeout=5)
+        retryCount = 3
+        retryIdx = 0
+        while retryIdx < retryCount:
+            retryIdx = retryIdx + 1
+            time.sleep(random.random())
+            r = imgSession.get(imgUrl, verify = False, timeout=5)
+            if r.status_code == 200:
+                break
         if r.status_code != 200:
-            logger.error("Fail to fetch image from [%s], status_code = [%d]" % (imgUrl, r.status_code))
+            logger.error("Fail to fetch image from [%s] to [%s], status_code = [%d]" % (imgUrl, targetImgPath, r.status_code))
         else:
             content = r.content
     except:
@@ -133,7 +139,8 @@ def fetchImagesFromSubPage(chapterId, chapterIdx, chapterDir):
             imageDledCount = imageDledCount + 1
     if imageDledCount != len(imgs):
         errorMsg = "Only [%d/%d] images downloaded successfully for [%s]" % (imageDledCount, len(imgs), subPageLink)
-    return ((imageDledCount == len(imgs)), errorMsg)
+        logger.error(errorMsg)
+    return ((imageDledCount >= (len(imgs)*9/10)), errorMsg)
 
 def getComicNameFromSoup(soup):
     h1 = soup.find('h1')

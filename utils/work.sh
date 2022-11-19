@@ -4,6 +4,9 @@ filePath=$0
 fileDir=`dirname $filePath`
 cd $fileDir
 comicRootDir="../comic/00-连载中/"
+logFile="utils.log"
+
+rm -f $logFile
 
 scripts="/home/pi/github/comicViewer/utils/clImages/clImageAutoFetcher.sh \
         /home/pi/github/comicViewer/utils/hm7mjImages/work.sh \
@@ -16,7 +19,7 @@ do
     if [ -z "$pidStr" ]
     then
         echo "\n\n=== execute $s ===\n\n"
-        /bin/sh "$s"
+        /bin/sh "$s" >> $logFile 2>&1
     else
         echo "\n\n=== $s is running, skip ===\n\n"
     fi

@@ -1,0 +1,209 @@
+$def with (pageInfo)
+
+<!DOCTYPE html PUBLIC “-//W3C//DTD XHTML 1.0 Strict//EN” “http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd”>
+<html xmlns=”http://www.w3.org/1999/xhtml”>
+<head>
+    <meta http-equiv=”Content-Type” content=”text/html; charset=utf-8″ />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>$pageInfo['title']</title>
+    <style type="text/css">
+        nav {
+            border-bottom: 1px solid black;
+        }
+
+        .crumbs ol {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        .crumb {
+            display: inline-block;
+        }
+
+        .crumb a::after {
+            display: inline-block;
+            color: #000;
+            content: '>';
+            font-size: 80%;
+            font-weight: bold;
+            padding: 0 3px;
+        }
+
+        td {
+            height: 3em;
+        }
+
+        input {
+            height: 2em;
+        }
+    </style>
+    <script type="text/javascript">
+        var nginxRedirectPath = '/comic/';
+        var imageNameList = [];
+        var dirList = [];
+        var userAgent = navigator.userAgent.toLowerCase();
+        var desktop = 'desktop';
+        var mobile = 'mobile';
+
+        function fillNavHeader()
+        {
+            var url = document.location.toString();
+            var navPath = ['Home'];
+            var dirs = [];
+            var increasePath = '';
+            url = url.split('?')[0]
+            if (nginxRedirectPath.length == 0)
+            {
+                var urlWithoutHttp = url.split('//')[1];
+                var firstSlashIdx = urlWithoutHttp.indexOf('/');
+                var pagePath = urlWithoutHttp.substring(firstSlashIdx + 1);
+                dirs = pagePath.split('/');
+                increasePath = '/';
+            }
+            else
+            {
+                var pathWithoutNginxRedirectPath = url.split(nginxRedirectPath)[1];
+                dirs = pathWithoutNginxRedirectPath.split('/');
+                increasePath = nginxRedirectPath;
+            }
+            for (var i=0; i < dirs.length; i++)
+            {
+                if (dirs[i].length > 0)
+                {
+                    navPath.push(dirs[i]);
+                }
+            }
+            console.log(navPath);
+            var htmlText = '<nav class="crumbs" ><ol>';
+            for (var i = 0; i < navPath.length; i++)
+            {
+                if (i == navPath.length - 1 && i != 0)
+                {
+                    htmlText = htmlText + '<li class="crumb">' + decodeURI(navPath[i]) + '</li>';
+                }
+                else
+                {
+                    if (i > 0)
+                    {
+                        increasePath = increasePath + navPath[i] + '/';
+                    }
+                    htmlText = htmlText +
+                        '<li class="crumb"><a href="' +
+                        increasePath +
+                        '">' +
+                        decodeURI(navPath[i]) +
+                        '</a></li>';
+                }
+            }
+            htmlText = htmlText + '</ol></nav>';
+            document.getElementById('navHeader').innerHTML = htmlText;
+        }
+
+        function fillDirTableDiv()
+        {
+            var numberOfCols = 3;
+            var paddingColsCount = (numberOfCols - (dirList.length % numberOfCols)) % numberOfCols;
+            for (var i =0; i < paddingColsCount; i++)
+            {
+                dirList.push('')
+            }
+            var rowCount = dirList.length / numberOfCols;
+            var htmlText = '<table>'
+            for (var i = 0; i < rowCount; i++)
+            {
+                htmlText = htmlText + '<tr>';
+                for (var j = 0; j < numberOfCols; j++)
+                {
+                    var linkHtml = '<a href="./' + dirList[i*numberOfCols + j] + '/">' + dirList[i*numberOfCols + j] + '</a>';
+                    htmlText = htmlText + '<td>&nbsp;&nbsp;' + linkHtml + '&nbsp;&nbsp;</td>';
+                }
+                htmlText = htmlText + '</tr>';
+            }
+            htmlText = htmlText + '</table>'
+            document.getElementById('dirTable').innerHTML = htmlText;
+        }
+
+        function getImageAbsolutePath(imageFileName)
+        {
+            var url = document.location.toString();
+            url = url.split('?')[0]
+            if (nginxRedirectPath.length == 0)
+            {
+                var urlWithoutHttp = url.split('//')[1];
+                var firstSlashIdx = urlWithoutHttp.indexOf('/');
+                var pagePath = urlWithoutHttp.substring(firstSlashIdx);
+                return '/image' + pagePath + imageFileName;
+            }
+            else
+            {
+                var pathWithoutNginxRedirectPath = url.split(nginxRedirectPath)[1];
+                return nginxRedirectPath + 'image/' + pathWithoutNginxRedirectPath + imageFileName;
+            }
+        }
+
+        function detectDeviceType()
+        {
+            if (userAgent.indexOf('windows') >= 0)
+                return desktop;
+            if (userAgent.indexOf('macintosh') >= 0)
+                return desktop;
+            return mobile;
+        }
+
+        function fillImageViewDiv()
+        {
+            var url = document.location.toString();
+            var pathWithoutNginxRedirectPath = url.split(nginxRedirectPath)[1];
+
+            var htmlText = '';
+            var imageStyle = ' style="max-width:100%" ';
+            if (detectDeviceType() == desktop)
+                imageStyle = ' style="max-width:60%" '
+
+            for (var i = 0; i<imageNameList.length; i++)
+            {
+                htmlText = htmlText
+                    +'<img ' + imageStyle + 'src="' + getImageAbsolutePath(imageNameList[i]) + '"></img>'
+                    + '\n';
+            }
+            var imageViewDiv = document.getElementById('imageView');
+            imageViewDiv.innerHTML = htmlText;
+        }
+
+        var request = new XMLHttpRequest();
+        request.responseType = 'json';
+        request.onreadystatechange = function() {
+            if (request.readyState === 4) {
+                if (request.status === 200 || request.status === 304) {
+                    var jsonResponse = request.response;
+                    console.log(jsonResponse)
+                    imageNameList = jsonResponse['files'].sort();
+                    dirList = jsonResponse['dirs'].sort();
+                    fillNavHeader();
+                    fillDirTableDiv();
+                    fillImageViewDiv();
+                }
+                else {
+                    alert('HTTP fail: ' + request.status.toString());
+                }
+            }
+        }
+        request.open("GET", "./content");
+        request.send();
+    </script>
+</head>
+<body>
+<div id="navHeader">
+    <nav class="crumbs">
+        <ol>
+            <li class="crumb"><a href="">Home</a></li>
+        </ol>
+    </nav>
+</div>
+<div id='dirTable' align='center'></div>
+<div id='imageView' align='center'></div>
+
+
+</body>
+
+</html>

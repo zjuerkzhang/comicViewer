@@ -2,5 +2,6 @@ comic
 utils/*/images
 utils/*/config
 utils/*/log*
+utils/*.log
 utils/clImages/configFiles.list
 __pycache__
