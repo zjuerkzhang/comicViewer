@@ -4,6 +4,7 @@
 import web
 import os
 import json
+import re
 
 self_dir = os.path.dirname(os.path.abspath(__file__))
 g_root_dir = self_dir + "/../comic/"
@@ -28,7 +29,7 @@ class dirContentFetcher(object):
         if not os.path.exists(targetPath):
             return "Invalid directory path!"
         fileList = os.listdir(targetPath)
-        dataJson = {'dirs': [], 'files': []}
+        dataJson = {'dirs': [], 'files': [], 'nextChapter': ''}
         for f in fileList:
             if fileContainWantedPrefix(f):
                 continue
@@ -37,5 +38,16 @@ class dirContentFetcher(object):
             else:
                 if fileEndWithWantedExtention(f):
                     dataJson['files'].append(f)
+        print(targetPath)
+        if re.search('/\d{3}/$', targetPath) != None or re.search('/\d{3}-\d{3}/$', targetPath) != None:
+            currentDir = targetPath.split('/')[-2]
+            parentPath = targetPath.replace('%s/' % currentDir, '')
+            brotherDirs = list(filter(lambda x:os.path.isdir(parentPath + x), os.listdir(parentPath)))
+            brotherDirs.sort()
+            currentIdx = brotherDirs.index(currentDir)
+            if currentIdx == len(brotherDirs) - 1:
+                dataJson['nextChapter'] = '../'
+            else:
+                dataJson['nextChapter'] = '../%s/' %  brotherDirs[currentIdx + 1]
         web.header('Content-Type', 'application/json')
         return json.dumps(dataJson)

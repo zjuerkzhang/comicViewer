@@ -41,6 +41,7 @@ $def with (pageInfo)
         var nginxRedirectPath = '/comic/';
         var imageNameList = [];
         var dirList = [];
+        var nextHopUrl = ''
         var userAgent = navigator.userAgent.toLowerCase();
         var desktop = 'desktop';
         var mobile = 'mobile';
@@ -166,6 +167,19 @@ $def with (pageInfo)
                     +'<img ' + imageStyle + 'src="' + getImageAbsolutePath(imageNameList[i]) + '"></img>'
                     + '\n';
             }
+
+            if (nextHopUrl == '../')
+            {
+                htmlText = htmlText
+                    + '<div><a href="' + nextHopUrl + '">返回上一级</a></div>';
+            }
+            else if (nextHopUrl != '')
+            {
+                htmlText = htmlText
+                    + '<div><a href="' + nextHopUrl + '?allImgs=true">下一章</a></div>';
+            }
+
+
             var imageViewDiv = document.getElementById('imageView');
             imageViewDiv.innerHTML = htmlText;
         }
@@ -179,6 +193,7 @@ $def with (pageInfo)
                     console.log(jsonResponse)
                     imageNameList = jsonResponse['files'].sort();
                     dirList = jsonResponse['dirs'].sort();
+                    nextHopUrl = jsonResponse['nextChapter']
                     fillNavHeader();
                     fillDirTableDiv();
                     fillImageViewDiv();
