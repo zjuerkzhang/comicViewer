@@ -101,7 +101,7 @@ $def with (pageInfo)
 
         function fillDirTableDiv()
         {
-            var numberOfCols = 3;
+            var numberOfCols = 5;
             var paddingColsCount = (numberOfCols - (dirList.length % numberOfCols)) % numberOfCols;
             for (var i =0; i < paddingColsCount; i++)
             {
@@ -114,8 +114,14 @@ $def with (pageInfo)
                 htmlText = htmlText + '<tr>';
                 for (var j = 0; j < numberOfCols; j++)
                 {
-                    var linkHtml = '<a href="./' + dirList[i*numberOfCols + j] + '/">' + dirList[i*numberOfCols + j] + '</a>';
-                    htmlText = htmlText + '<td>&nbsp;&nbsp;' + linkHtml + '&nbsp;&nbsp;</td>';
+                    var regex = /^\d{3}(-\d{3})?/;
+                    var dirName = dirList[i*numberOfCols + j];
+                    var linkHtml = '&nbsp;&nbsp;<a href="./' + dirName + '/">' + dirName + '</a>&nbsp;&nbsp;';
+                    if (dirName.search(regex) == 0)
+                    {
+                        linkHtml = linkHtml + '<br>&nbsp;&nbsp;<a href="./' + dirName + '/?allImgs=true">全览</a>&nbsp;&nbsp;<br>';
+                    }
+                    htmlText = htmlText + '<td>' + linkHtml + '</td>';
                 }
                 htmlText = htmlText + '</tr>';
             }

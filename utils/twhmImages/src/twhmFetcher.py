@@ -6,6 +6,8 @@ import logging
 import re
 import os
 import json
+import time
+import random
 
 selfDir = os.path.dirname(os.path.abspath(__file__))
 fileName = '.'.join(__file__.split('.')[:-1]).split('/')[-1]
@@ -35,6 +37,16 @@ headers = {
             'Cache-Control': 'no-cache',
             'Host': host
         }
+imgHeaders = {
+            'Accept': 'image/avif,image/webp,*/*',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Accept-Language': 'zh-Hans-CN,zh-CN;q=0.9,zh;q=0.8,en;q=0.7,en-GB;q=0.6,en-US;q=0.5,ja;q=0.4',
+            'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.53 Safari/537.36 Edg/80.0.361.33',
+            'Connection' : 'keep-alive',
+            'Cache-Control': 'no-cache',
+            'Host': 'twhml.mvpimg.com',
+            'Referer': 'https://tuwenhanman.com/'
+        }
 cookies = None
 
 def getValidSoupFromLink(link):
@@ -47,20 +59,34 @@ def getValidSoupFromLink(link):
         logger.error("Fail to parse content from [%s]" % link)
     return soup
 
+
 def downloadImg(imgUrl, targetImgPath):
     logger.debug("Download: %s --> %s" % (imgUrl, targetImgPath))
-    downloadSuccess = False
+    content = None
+    try:
+        retryCount = 4
+        startUseProxyIdx = 2
+        retryIdx = 0
+        usedProxy = None
+        while retryIdx < retryCount:
+            retryIdx = retryIdx + 1
+            time.sleep(random.random())
+            if startUseProxyIdx >= 2:
+                usedProxy = gProxies
+            r = requestSession.get(imgUrl, headers = imgHeaders, verify = False, timeout=5, proxies=usedProxy)
+            if r.status_code == 200:
+                break
+        if r.status_code != 200:
+            logger.error("Fail to fetch image from [%s] to [%s], status_code = [%d]" % (imgUrl, targetImgPath, r.status_code))
+        else:
+            content = r.content
+    except Exception as e:
+        logger.error("Fail to download image from [%s] to [%s]: %s" % (imgUrl, targetImgPath, str(e)))
+    if content == None:
+        return False
     with open(targetImgPath, 'wb') as f:
-        try:
-            r = imgSession.get(imgUrl, proxies=gProxies)
-            if r.status_code != 200:
-                logger.error("Fail to download image from [%s] to [%s], status_code = [%d]" % (imgUrl, targetImgPath, r.status_code))
-            else:
-                downloadSuccess = True
-                f.write(r.content)
-        except:
-            logger.error("Fail to download image from [%s] to [%s]" % (imgUrl, targetImgPath))
-    return downloadSuccess
+        f.write(content)
+    return True
 
 
 def fetchImagesFromSubPage(subPageLink, chapterIdx, chapterDir):
@@ -312,9 +338,13 @@ if __name__ == "__main__":
             infoJsonPath = "%s/%s/info.json" % (targetDir, comicName)
             with open(infoJsonPath, 'w') as f:
                 json.dump(retData, f, indent = 4, ensure_ascii = False)
-    elif len(sys.argv) == 3:
-        comicLink = sys.argv[-2]
-        chapterIdx = int(sys.argv[-1])
-        fetchComicChapter(comicLink, chapterIdx)
+    elif len(sys.argv) == 4:
+        chapterLink = sys.argv[-3]
+        chapterIdx = int(sys.argv[-2])
+        comicDir = sys.argv[-1]
+        chapterDir = comicDir + ("%03d/" % chapterIdx)
+        (ret, errorMsg) = fetchImagesFromSubPage(chapterLink, chapterIdx, chapterDir)
+        if errorMsg != '':
+            print(errorMsg)
     else:
         logger.error("Invalid parameter count")
