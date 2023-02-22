@@ -168,7 +168,7 @@ $def with (pageInfo)
                     + '\n';
             }
 
-            if (nextHopUrl != '')
+            if (nextHopUrl != '' && nextHopUrl != '../')
             {
                 htmlText = htmlText
                     + '<div><a href="' + nextHopUrl + '?allImgs=true">下一章</a></div><br>';
