@@ -17,7 +17,7 @@ DATEFMT = '%Y-%m-%d %H:%M:%S'
 logging.basicConfig(filename = logFilePath, level = logging.INFO, format = FORMAT, datefmt = DATEFMT)
 
 logger = logging.getLogger(fileName)
-host = "tuwenhanman.com"
+host = "www.aikanhanman.com"
 site = "https://" + host
 configFilePath = "%s/../config/config.json" % selfDir
 notificationUrl="https://bloghz.ddns.net/cmd/notify/"
@@ -44,8 +44,8 @@ imgHeaders = {
             'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.53 Safari/537.36 Edg/80.0.361.33',
             'Connection' : 'keep-alive',
             'Cache-Control': 'no-cache',
-            'Host': 'twhml.mvpimg.com',
-            'Referer': 'https://tuwenhanman.com/'
+            'Host': host,
+            'Referer': ''
         }
 cookies = None
 
@@ -99,22 +99,24 @@ def fetchImagesFromSubPage(subPageLink, chapterIdx, chapterDir):
         logger.error(errorMsg)
         return (False, errorMsg)
     #print(soup.prettify())
-    contentDiv = soup.find('div', attrs = {'style': 'max-width:720px;margin:0 auto;text:center;'})
+    contentDiv = soup.find('div', attrs = {'class': 'rd-article-wr clearfix'})
     if contentDiv == None:
-        errorMsg = "Fail to get <div style='max-width:720px;margin:0 auto;text:center;'> from [%s]" % subPageLink
+        errorMsg = "Fail to get <div class='rd-article-wr clearfix'> from [%s]" % subPageLink
         logger.error(errorMsg)
         return (False, errorMsg)
     imgs = contentDiv.find_all('img')
     if len(imgs) == 0:
-        errorMsg = "No <img> for chapter [%d] in <div class='pictures9593'> found [%s]" % (subPageLink, chapterIdx)
+        errorMsg = "No <img> for chapter [%d] in <div class='rd-article-wr clearfix'> found [%s]" % (chapterIdx, subPageLink)
         logger.error(errorMsg)
         return (False, errorMsg)
-    logger.info("[%d] <img> for chapter [%d] in <div class='pictures9593'> found [%s]" % (len(imgs), chapterIdx, subPageLink))
+    logger.info("[%d] <img> for chapter [%d] in <div class='rd-article-wr clearfix'> found [%s]" % (len(imgs), chapterIdx, subPageLink))
+    '''
     vipImg = list(filter(lambda x:x['src'].find('vip.png') >=0, imgs))
     if len(vipImg) > 0:
         errorMsg = "This page [%d: %s] is for VIP, not fetch image" % (chapterIdx, subPageLink)
         logger.info(errorMsg)
         return (False, '')
+    '''
     if not os.path.exists(chapterDir):
         os.mkdir(chapterDir)
     fileExistCount = len(os.listdir(chapterDir))
@@ -126,9 +128,9 @@ def fetchImagesFromSubPage(subPageLink, chapterIdx, chapterDir):
     imageDledCount = 0
     for img in imgs:
         imgIdx = imgIdx + 1
-        imgExt = img['src'].split('.')[-1]
+        imgExt = img['data-original'].split('.')[-1]
         targetImgPath = chapterDir + ("%03d.%s" % (imgIdx, imgExt))
-        ret = downloadImg(img['src'], targetImgPath)
+        ret = downloadImg(img['data-original'], targetImgPath)
         if ret:
             imageDledCount = imageDledCount + 1
     if imageDledCount != len(imgs):
@@ -136,37 +138,22 @@ def fetchImagesFromSubPage(subPageLink, chapterIdx, chapterDir):
     return ((imageDledCount == len(imgs)), errorMsg)
 
 def getComicNameFromSoup(soup):
-    h1 = soup.find('h1', attrs = {"class": "fed-part-eone fed-font-xvi"})
-    if h1 == None:
-        logger.info("Fail to get <h1> from soup")
+    p = soup.find('p', attrs = {"class": "comic-title j-comic-title"})
+    if p == None:
+        logger.info("Fail to get <p> from soup")
         return ''
-    a = h1.find('a')
-    if a == None:
-        logger.info("Fail to get <a> under <h1>")
-        return ''
-    return a.string
+    return p.string
 
 def login():
     global cookies
-    #loginOutUrl = "https://%s/member/index_do.php?fmdo=login&dopost=exit" % host
-    #requestSession.post("https://www.twhm.net/member/index_do.php?fmdo=login&dopost=exit", headers=headers, proxies=gProxies)
     loginPostData = {
-        "action": "login",
-        "keeptime": str(3600 * 24),
-        "gourl": ("https:/%s/" % host),
-        "user_name": "cruslefrat",
-        "user_pwd": "9gU9CNBhMWH7Azd"
+        "name": "15194234617",
+        "pass": '006akhm180',
+        "islog": '1',
+        "pcode": ""
     }
-    loginUrl = "https://%s/member/ajax_login.php?" % host
-    firstPara = True
-    for key in loginPostData.keys():
-        if not firstPara:
-            loginUrl = loginUrl + "&"
-        else:
-            firstPara = False
-        loginUrl = loginUrl + ("%s=%s" % (key, loginPostData[key]))
-    print(loginUrl)
-    r = requestSession.post(loginUrl, headers= headers, proxies=gProxies)
+    loginUrl = "https://%s/index.php/api/user/login" % host
+    r = requestSession.post(loginUrl, headers= headers, json=loginPostData)
     if r.status_code != 200:
         logger.error("Fail to login [%s]" % loginUrl)
         return False
@@ -175,19 +162,28 @@ def login():
     return True
 
 def getChapterLinks(mainPageSoup):
-    aList = mainPageSoup.find_all('a', attrs = {'class': 'fed-btns-info fed-rims-info fed-part-eone'})
+    aList = mainPageSoup.find_all('a', attrs = {'class': 'j-chapter-link'})
+    finalChapterLink = ''
+    maxChapterIdx = -1
     chapterLinks = {}
     for a in aList:
         chapterIdx = -1
         for content in a.contents:
-            nums = re.findall('第(\d+)', content)
+            nums = re.findall('第(\d+)', str(content))
             if len(nums) > 0:
                 chapterIdx = int(nums[0])
+                if chapterIdx > maxChapterIdx:
+                    maxChapterIdx = chapterIdx
+            finalChapterKeys = re.findall('最終話', str(content))
+            if len(finalChapterKeys) > 0:
+                finalChapterLink = a['href']
         if chapterIdx == -1:
             logger.info("Fail to find the chapter number from <a> [%s]" % a.prettify())
             continue
         if chapterIdx not in chapterLinks.keys():
             chapterLinks[chapterIdx] = a['href']
+    if finalChapterLink != '' and maxChapterIdx > 0:
+        chapterLinks[maxChapterIdx + 1] = finalChapterLink
     return chapterLinks
 
 def fetchComic(link, comicRootDir, comicInfo = {}):
@@ -195,9 +191,10 @@ def fetchComic(link, comicRootDir, comicInfo = {}):
         comicInfo = {
                 'name': '',
                 'links': {
-                    'twhm': link,
+                    'twhm': '',
                     'yxhm': '',
-                    '5wc': ''
+                    '5wc': '',
+                    'akhm': link
                 },
                 'latestChapterIdx': 0
             }
@@ -221,7 +218,7 @@ def fetchComic(link, comicRootDir, comicInfo = {}):
             else:
                 if errorMsg != '':
                     jsonMsg = {
-                        'subject': 'Caoliu topic: 图文韩漫',
+                        'subject': 'Caoliu topic: 爱看韩漫',
                         'channel': 'telegram',
                         'content': " - Fail to update chapter [%d] of [%s]. \n --- %s" % (chapterIdx, comicInfo['name'], errorMsg)
                     }
@@ -229,20 +226,6 @@ def fetchComic(link, comicRootDir, comicInfo = {}):
                 break
     return comicInfo
 
-def fetchComicChapter(link, comicRootDir, chapterIndex):
-    soup = getValidSoupFromLink(link)
-    comicName = getComicNameFromSoup(soup)
-    comicDir = comicRootDir + '/' + comicName + '/'
-    if not os.path.exists(comicDir):
-        os.mkdir(comicDir)
-    subPages = getChapterLinks(soup)
-    if chapterIndex in subPages.keys():
-        chapterDir = comicDir + ("%03d/" % chapterIndex)
-        (ret, errorMsg) = fetchImagesFromSubPage(subPages[chapterIndex], chapterIndex, chapterDir)
-        if not ret:
-            print("Fail to fetch images for chapter [%d] from page [%s]" % (chapterIndex, subPages[chapterIndex]))
-    else:
-        print("No chapter [%d] in page [%s]" % (chapterIndex, link))
 
 def getValidConfigContent():
     if not os.path.exists(configFilePath):
@@ -264,12 +247,12 @@ def getValidComicInfoContent(comicInfoFilePath):
         return None
     with open(comicInfoFilePath, 'r') as f:
         comicInfo = json.load(f)
-    if 'links' not in comicInfo.keys() or 'twhm' not in comicInfo['links'].keys():
-        logger.info("No <links> or <links/twhm> in [%s] " % comicInfoFilePath)
+    if 'links' not in comicInfo.keys() or 'akhm' not in comicInfo['links'].keys():
+        logger.info("No <links> or <links/akhm> in [%s] " % comicInfoFilePath)
         return None
-    link = comicInfo['links']['twhm']
+    link = comicInfo['links']['akhm']
     if link == '':
-        logger.info("No valid twhm link in [%s] " % comicInfoFilePath)
+        logger.info("No valid akhm link in [%s] " % comicInfoFilePath)
         return None
     return comicInfo
 
@@ -295,9 +278,9 @@ if __name__ == "__main__":
             if comicInfo == None:
                 continue
 
-            link = comicInfo['links']['twhm']
-            link = link.replace("www.twhm.net", host)
-            comicInfo['links']['twhm'] = link
+            if 'akhm' not in comicInfo['links'].keys():
+                continue
+            link = comicInfo['links']['akhm']
             latestChapterIdx = comicInfo['latestChapterIdx'] if 'latestChapterIdx' in comicInfo.keys() else 0
             name = comicInfo['name'] if 'name' in comicInfo.keys() else ''
 
@@ -315,7 +298,7 @@ if __name__ == "__main__":
                 logger.info("No update for Comic [%s], still in [%d]" % (retData['name'], retData['latestChapterIdx']))
         if configFileNeedUpdate:
             jsonMsg = {
-                'subject': 'Caoliu topic: 图文韩漫',
+                'subject': 'Caoliu topic: 爱看韩漫',
                 'channel': 'telegram',
                 'content': " - " + notifMsg
             }
@@ -338,6 +321,34 @@ if __name__ == "__main__":
             infoJsonPath = "%s/%s/info.json" % (targetDir, comicName)
             with open(infoJsonPath, 'w') as f:
                 json.dump(retData, f, indent = 4, ensure_ascii = False)
+    elif len(sys.argv) == 3:
+        comicLink = sys.argv[-2]
+        if sys.argv[-1] == 'new':
+            logger.info("Try to insert new comic into disk from %s" % comicLink)
+            soup = getValidSoupFromLink(comicLink)
+            comicName = getComicNameFromSoup(soup)
+            if comicName == '':
+                print("No valid comic by [%s]" % comicLink)
+                exit(1)
+            comicDir = "%s/%s" % (targetDir, comicName)
+            if os.path.exists(comicDir):
+                print("[%s] by [%s] exists, no need manual update" % (comicName, comicLink))
+                exit(0)
+            else:
+                os.mkdir(comicDir)
+            comicInfo = {
+                'name': comicName,
+                'links': {
+                    'twhm': '',
+                    'yxhm': '',
+                    '5wc': '',
+                    'akhm': comicLink
+                },
+                'latestChapterIdx': 0
+            }
+            infoJsonPath = "%s/%s/info.json" % (targetDir, comicName)
+            with open(infoJsonPath, 'w') as f:
+                json.dump(comicInfo, f, indent = 4, ensure_ascii = False)
     elif len(sys.argv) == 4:
         chapterLink = sys.argv[-3]
         chapterIdx = int(sys.argv[-2])

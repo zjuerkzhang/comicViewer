@@ -9,12 +9,12 @@ import json
 
 selfDir = os.path.dirname(os.path.abspath(__file__))
 fileName = '.'.join(__file__.split('.')[:-1]).split('/')[-1]
-logFilePath = ("%s/../log/%s.log" % (selfDir, fileName))
+logFilePath = ("%s/../../log/log.log" % (selfDir))
 FORMAT = '%(asctime)s %(name)s [%(levelname)s]: %(message)s'
 DATEFMT = '%Y-%m-%d %H:%M:%S'
 logging.basicConfig(filename = logFilePath, level = logging.INFO, format = FORMAT, datefmt = DATEFMT)
 
-logger = logging.getLogger('BasicFetcher')
+logger = logging.getLogger(fileName)
 host = "www.5wc.net"
 site = "https://" + host
 targetRootDir = "%s/../images/" % selfDir
