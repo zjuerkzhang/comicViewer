@@ -35,6 +35,7 @@ done
 
 scripts="/home/pi/github/comicViewer/utils/clImages/clImageAutoFetcher.sh \
         /home/pi/github/comicViewer/utils/hanmanku/work.sh \
+        /home/pi/github/comicViewer/utils/kamu/work.sh \
         /home/pi/github/comicViewer/utils/aikanhanman/work.sh \
         /home/pi/github/comicViewer/utils/twhmImages/work.sh"
 
