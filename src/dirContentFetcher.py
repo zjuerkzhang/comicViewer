@@ -8,6 +8,7 @@ import re
 
 self_dir = os.path.dirname(os.path.abspath(__file__))
 g_root_dir = self_dir + "/../comic/"
+g_continue_fetch_config_file = self_dir + "/../utils/hanmanFetcher/config/config.json"
 skipped_file_dir_prefix = ['_']
 imageExtension = ['.jpg', '.gif', '.png', 'jpeg']
 
@@ -23,13 +24,23 @@ def fileEndWithWantedExtention(filename, extensions = imageExtension):
             return True
     return False
 
+def getComicsInContinueFetching():
+    if not os.path.exists(g_continue_fetch_config_file):
+        return []
+    with open(g_continue_fetch_config_file, 'r') as f:
+        configJson = json.load(f)
+        comicNames = list(map(lambda x:x['name'], configJson['comics']))
+        return comicNames
+    return []
+
 class dirContentFetcher(object):
     def GET(self, path = ''):
         targetPath = '%s/%s/' % (g_root_dir, path)
         if not os.path.exists(targetPath):
             return "Invalid directory path!"
+        comicsInFetching = getComicsInContinueFetching()
         fileList = os.listdir(targetPath)
-        dataJson = {'dirs': [], 'files': [], 'nextChapter': ''}
+        dataJson = {'dirs': [], 'files': [], 'nextChapter': '', 'comicsInFetching': comicsInFetching}
         for f in fileList:
             if fileContainWantedPrefix(f):
                 continue
@@ -38,7 +49,7 @@ class dirContentFetcher(object):
             else:
                 if fileEndWithWantedExtention(f):
                     dataJson['files'].append(f)
-        print(targetPath)
+        # print(targetPath)
         if re.search('/\d{3}/$', targetPath) != None or re.search('/\d{3}-\d{3}/$', targetPath) != None:
             currentDir = targetPath.split('/')[-2]
             parentPath = targetPath.replace('%s/' % currentDir, '')

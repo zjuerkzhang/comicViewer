@@ -5,8 +5,8 @@ After=network.target
 [Service]
 User=%i
 Type=simple
-WorkingDirectory=/home/pi/github/comicViewer
-ExecStart=/usr/bin/python3 /home/pi/github/comicViewer/src/main.py 127.0.0.1:9001
+WorkingDirectory=/home/kzhang/github/comicViewer
+ExecStart=/usr/bin/python3 /home/kzhang/github/comicViewer/src/main.py 127.0.0.1:9001
 Restart=on-failure
 RestartSec=30
 

@@ -1,5 +1,5 @@
 #!/bin/sh
-imgDlUrl="https://bloghz.ddns.net/cmd/clImgDler"
+imgDlUrl="https://totototot.asuscomm.com/cmd/clImgDler"
 link2DirMapFile="./link2DirMap.txt"
 
 rm -f $link2DirMapFile

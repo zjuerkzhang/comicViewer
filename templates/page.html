@@ -42,6 +42,7 @@ $def with (pageInfo)
         var currentPageIdx = 0;
         var imageNameList = [];
         var dirList = [];
+        var comicsInFetching = [];
         var userAgent = navigator.userAgent.toLowerCase();
         var desktop = 'desktop';
         var mobile = 'mobile';
@@ -99,6 +100,20 @@ $def with (pageInfo)
             document.getElementById('navHeader').innerHTML = htmlText;
         }
 
+        function findComicInList(comic, comicList)
+        {
+            //console.log(comic);
+            for (var i = 0; i < comicList.length; i++)
+            {
+                //console.log(comicList[i]);
+                if (comicList[i] == comic)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         function fillDirTableDiv()
         {
             var numberOfCols = 5;
@@ -116,7 +131,14 @@ $def with (pageInfo)
                 {
                     var regex = /^\d{3}(-\d{3})?/;
                     var dirName = dirList[i*numberOfCols + j];
-                    var linkHtml = '&nbsp;&nbsp;<a href="./' + dirName + '/">' + dirName + '</a>&nbsp;&nbsp;';
+                    var displayDirName = dirName;
+                    console.log(dirName);
+                    if (findComicInList(dirName, comicsInFetching))
+                    {
+                        console.log(comicsInFetching);
+                        displayDirName = dirName + " [连载中]";
+                    }
+                    var linkHtml = '&nbsp;&nbsp;<a href="./' + dirName + '/">' + displayDirName + '</a>&nbsp;&nbsp;';
                     if (dirName.search(regex) == 0)
                     {
                         linkHtml = linkHtml + '<br>&nbsp;&nbsp;<a href="./' + dirName + '/?allImgs=true">全览</a>&nbsp;&nbsp;<br>';
@@ -262,7 +284,17 @@ $def with (pageInfo)
                     var jsonResponse = request.response;
                     console.log(jsonResponse)
                     imageNameList = jsonResponse['files'].sort();
-                    dirList = jsonResponse['dirs'].sort();
+                    //dirList = jsonResponse['dirs'].sort();
+                    dirList = jsonResponse['dirs'].sort(
+                        function compareFunction(param1, param2) {
+                            return param1.localeCompare(param2, "zh");
+                        }
+                    );
+                    comicsInFetching = jsonResponse['comicsInFetching'].sort(
+                        function compareFunction(param1, param2) {
+                            return param1.localeCompare(param2, "zh");
+                        }
+                    );
                     fillNavHeader();
                     fillDirTableDiv();
                     fillImageViewDiv();

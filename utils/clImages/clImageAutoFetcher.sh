@@ -1,5 +1,5 @@
 #!/bin/sh
-cd /home/pi/github/comicViewer/utils/clImages
+cd /home/kzhang/github/comicViewer/utils/clImages
 link2DirMapFile="../link2DirMap.txt"
 logFile="log.log"
 
@@ -35,13 +35,13 @@ generate_img_dir_by_page_title()
 
 }
 
-notifier_url='https://bloghz.ddns.net/cmd/notify/'
+notifier_url='https://totototot.asuscomm.com/cmd/notify/'
 
 configFileList='configFiles.list'
 echo "-------------------------"
 echo `date`
 
-scp -P 26639 root@bloghz.ddns.net:/root/clImages/config/*.json config/
+scp -P 26639 kzhang@totototot.asuscomm.com:/home/kzhang/wwwHtml/clImgConfig/*.json config/
 configFiles=`ls config`
 
 notifyContent=''
@@ -69,7 +69,7 @@ do
     echo "`date`: create images/$dirName and download images" >> $logFile
     mkdir images/$dirName
     links=`cat config/$cf|grep http|grep -v pageLink|awk -F '"' '{print $2}'`
-    title=`cat config/$cf|grep '"title":'|awk -F ':' '{print $NF}'|tr ' ' '_'|awk -F '"' '{print $2}'`
+    title=`cat config/$cf|grep '"title":'|awk -F '":' '{print $NF}'|tr ' ' '_'|awk -F '"' '{print $2}'`
     pageLink=`cat config/$cf|grep pageLink|awk -F '"' '{print $4}'`
     echo "$title [$pageLink]" >> $logFile
     partlySuccess=0

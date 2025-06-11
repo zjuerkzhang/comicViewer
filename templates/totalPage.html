@@ -189,7 +189,13 @@ $def with (pageInfo)
                     var jsonResponse = request.response;
                     console.log(jsonResponse)
                     imageNameList = jsonResponse['files'].sort();
-                    dirList = jsonResponse['dirs'].sort();
+                    //dirList = jsonResponse['dirs'].sort();
+                    dirList = jsonResponse['dirs'].sort(
+                        function compareFunction(param1, param2) {
+                            return param1.localeCompare(param2, "zh");
+                        }
+                    );
+                    console.log(dirList);
                     nextHopUrl = jsonResponse['nextChapter']
                     fillNavHeader();
                     fillDirTableDiv();

@@ -8,6 +8,25 @@ logFile="utils.log"
 
 rm -f $logFile
 
+
+
+
+scripts="/home/kzhang/github/comicViewer/utils/clImages/clImageAutoFetcher.sh \
+        /home/kzhang/github/comicViewer/utils/hanmanFetcher/work.sh"
+
+for s in $scripts
+do
+    pidStr=`ps aux|grep -F "$s"|grep -v grep`
+    if [ -z "$pidStr" ]
+    then
+        echo "\n\n=== execute $s ===\n\n"
+        /bin/sh "$s" >> $logFile 2>&1
+    else
+        echo "\n\n=== $s is running, skip ===\n\n"
+    fi
+done
+exit 0
+
 comicDirs=`ls $comicRootDir`
 for d in $comicDirs
 do
@@ -33,32 +52,5 @@ do
 done
 
 
-scripts="/home/pi/github/comicViewer/utils/clImages/clImageAutoFetcher.sh \
-        /home/pi/github/comicViewer/utils/hanmanku/work.sh \
-        /home/pi/github/comicViewer/utils/kamu/work.sh \
-        /home/pi/github/comicViewer/utils/aikanhanman/work.sh \
-        /home/pi/github/comicViewer/utils/twhmImages/work.sh"
-
-unusedScripts="/home/pi/github/comicViewer/utils/hm7mjImages/work.sh \
-        /home/pi/github/comicViewer/utils/yxhmImages/work.sh"
-
-for s in $scripts
-do
-    pidStr=`ps aux|grep -F "$s"|grep -v grep`
-    if [ -z "$pidStr" ]
-    then
-        echo "\n\n=== execute $s ===\n\n"
-        /bin/sh "$s" >> $logFile 2>&1
-    else
-        echo "\n\n=== $s is running, skip ===\n\n"
-    fi
-done
-
-
 exit 0
-/bin/sh /home/pi/github/comicViewer/utils/clImages/clImageAutoFetcher.sh
-/bin/sh /home/pi/github/comicViewer/utils/hm5wcImages/work.sh
-/bin/sh /home/pi/github/comicViewer/utils/hm7mjImages/work.sh
-/bin/sh /home/pi/github/comicViewer/utils/twhmImages/work.sh
-/bin/sh /home/pi/github/comicViewer/utils/yxhmImages/work.sh
 
