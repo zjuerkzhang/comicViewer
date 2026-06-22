@@ -22,7 +22,7 @@ class AikanhanmanFetcher(BaseFetcher):
         for a in aList:
             chapterIdx = -1
             for content in a.contents:
-                nums = re.findall('第(\d+)', str(content))
+                nums = re.findall(self.getSearchRegexPattern(), str(content))
                 if len(nums) > 0:
                     chapterIdx = int(nums[0])
                     if chapterIdx > maxChapterIdx:

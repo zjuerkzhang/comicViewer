@@ -9,6 +9,11 @@ import sys
 from ConfigHandler import ConfigHandler
 
 gFetcherMapping = {
+    'wuwu': {
+        'name': '污污漫画',
+        'host': 'www.55comic.com',
+        'fetcher': WuwuhanmanFetcher
+    },
     'hmk': {
         'name': '韩漫库',
         'host': 'se8.us',
@@ -24,11 +29,6 @@ gFetcherMapping = {
         'host': 'kamu.cc',
         'fetcher': KamuFetcher
     },
-    'wuwu': {
-        'name': '污污漫画',
-        'host': 'www.comicbox.xyz',
-        'fetcher': WuwuhanmanFetcher
-    }
 }
 gLogger = None
 selfDir = os.path.dirname(os.path.abspath(__file__))
@@ -53,7 +53,7 @@ def getLogger():
 def getLinkAndChapterIdxMappings(fetcherKey, comicList):
     retList = []
     for comicInfo in comicList:
-        entry = {'link': '', 'idx': 0, 'name': ''}
+        entry = {'link': '', 'idx': 0, 'name': '', 'prefix': ''}
         if 'latestChapterIdx' in comicInfo.keys():
             entry['idx'] = comicInfo['latestChapterIdx']
         if 'name' in comicInfo.keys():
@@ -61,6 +61,8 @@ def getLinkAndChapterIdxMappings(fetcherKey, comicList):
         if 'links' in comicInfo.keys() and fetcherKey in comicInfo['links'].keys() and comicInfo['links'][fetcherKey] != '':
             entry['link'] = comicInfo['links'][fetcherKey]
             retList.append(entry)
+        if 'prefix' in comicInfo.keys():
+            entry['prefix'] = comicInfo['prefix']
     return retList
 
 
@@ -69,13 +71,13 @@ def updateAllComics():
     comicRootPath = jsonConfig['targetDir']
     comicList = jsonConfig['comics']
     for key in gFetcherMapping.keys():
-        if key != 'wuwu':
-            pass
+        if key == 'akhm' or key == 'kamu': # or key == 'wuwu': # or key == 'hmk':
+            continue
         fetcherClass = gFetcherMapping[key]['fetcher']
         fetcher = fetcherClass(comicRootPath, gFetcherMapping[key]['name'])
         linkAndIdxMappings = getLinkAndChapterIdxMappings(key, comicList)
         for entry in linkAndIdxMappings:
-            fetcher.setInternalParameters(entry['link'], entry['name'], entry['idx'])
+            fetcher.setInternalParameters(entry['link'], entry['name'], entry['idx'], entry['prefix'])
             fetcher.fetchComic()
             newLatestIdx = fetcher.getLatestChapterIdx()
             comicName = fetcher.getComicName()

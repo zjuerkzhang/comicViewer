@@ -6,7 +6,7 @@ After=network.target
 User=%i
 Type=simple
 WorkingDirectory=/home/kzhang/github/comicViewer
-ExecStart=/usr/bin/python3 /home/kzhang/github/comicViewer/src/main.py 127.0.0.1:9001
+ExecStart=/home/kzhang/github/comicViewer/.venv/bin/python3 /home/kzhang/github/comicViewer/src/main.py 127.0.0.1:9001
 Restart=on-failure
 RestartSec=30
 

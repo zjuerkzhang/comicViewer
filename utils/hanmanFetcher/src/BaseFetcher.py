@@ -27,7 +27,16 @@ class BaseFetcher(object):
         self.proxy = None
 
 
-    def setInternalParameters(self, link = '', name = '', lastChapterIdx = 0):
+
+    def getSearchRegexPattern(self):
+        return f"{self.prefix}\s*第(\d+)"
+        if self.prefix == '':
+            return '\s*^第(\d+)'
+        else:
+            return '^%s\s*第(\d+)' % self.prefix
+
+
+    def setInternalParameters(self, link = '', name = '', lastChapterIdx = 0, prefix = ''):
         baseHeaders = {
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
             'Accept-Encoding': 'gzip, deflate, br',
@@ -49,6 +58,7 @@ class BaseFetcher(object):
             self.comicDirPath = '%s/%s/' % (self.comicRootPath, self.comicName)
         else:
             self.comicDirPath = ''
+        self.prefix = prefix
 
         self.lastChapterIdx = lastChapterIdx
         self.LatestChapterIdx = lastChapterIdx
@@ -222,7 +232,7 @@ class BaseFetcher(object):
 
     def notifyComicFetchResult(self, errorMsg):
         needNotify = False
-        notificationUrl="https://totototot.asuscomm.com/cmd/notify/"
+        notificationUrl="http://127.0.0.1:59999/notify"
         msg = 'Summary for task of [%s]:' % self.comicName
         if self.LatestChapterIdx > self.lastChapterIdx:
             msg = msg + ('\n -- updated from chapter [%d] to [%d]' % (self.lastChapterIdx, self.LatestChapterIdx))

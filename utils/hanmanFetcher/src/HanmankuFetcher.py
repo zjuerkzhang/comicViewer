@@ -12,5 +12,5 @@ class HanmankuFetcher(AikanhanmanFetcher):
 
 if __name__ == '__main__':
     a = HanmankuFetcher('../test/', '韩漫库')
-    a.setInternalParameters('https://se8.us/index.php/comic/tuihuonuyou', '', 23)
+    a.setInternalParameters('https://se8.us/index.php/comic/tongyanjimu', '', 7)
     a.fetchComic()

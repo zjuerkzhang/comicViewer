@@ -3,8 +3,8 @@ import re
 import json
 
 class KamuFetcher(BaseFetcher):
-    def __init__(self, comicRootPath, webSiteName):
-        super().__init__(comicRootPath, webSiteName)
+    def __init__(self, comicRootPath, webSiteName, prefix = ''):
+        super().__init__(comicRootPath, webSiteName, prefix)
         #self.proxy = {
         #    'http': 'http://192.168.119.47:8080',
         #    'https': 'http://192.168.119.47:8080'

@@ -39,7 +39,7 @@ class WuwuhanmanFetcher(BaseFetcher):
         chapterLinks = {}
         for a in aList:
             chapterIdx = -1
-            nums = re.findall('第(\d+)', str(a['title']))
+            nums = re.findall(self.getSearchRegexPattern(), str(a['title']))
             if len(nums) > 0:
                 chapterIdx = int(nums[0])
                 if chapterIdx > maxChapterIdx:
@@ -212,5 +212,7 @@ class WuwuhanmanFetcher(BaseFetcher):
 
 if __name__ == '__main__':
     a = WuwuhanmanFetcher('', '')
-    a.setInternalParameters('https://www.comicbox.xyz/chapter/18102')
-    a.downloadImg('https://bmigmi-global.ccavbox.com/break_2/static/upload/book/4451/18102/516506.jpg', 'a.jpg', '')
+    a.setInternalParameters('https://www.55comic.com/book/4966', '繼母與繼姐', 119)
+    a.fetchImagesFromChapterPage('https://www.55comic.com/free-chapter/42781?t=20260415', 117, "/home/kzhang/github/comicViewer/comic/00-连载中/繼母與繼姐/117/")
+    #a.setInternalParameters('https://www.55comic.com/free-chapter/42781?t=20260415')
+    #a.downloadImg('https://bmigmij-wuwu.sqxxov.com/break_2/static/upload/book/4966/42781/3078938.jpg', 'a.jpg', '')

@@ -2,8 +2,8 @@ from BaseFetcher import BaseFetcher
 import re
 
 class KamuFetcher(BaseFetcher):
-    def __init__(self, comicRootPath, webSiteName):
-        super().__init__(comicRootPath, webSiteName)
+    def __init__(self, comicRootPath, webSiteName, prefix = ''):
+        super().__init__(comicRootPath, webSiteName, prefix)
 
 
     def parseComicWebToGetComicName(self, soup):

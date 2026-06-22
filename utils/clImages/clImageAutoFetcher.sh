@@ -35,7 +35,7 @@ generate_img_dir_by_page_title()
 
 }
 
-notifier_url='https://totototot.asuscomm.com/cmd/notify/'
+notifier_url='http://127.0.0.1:59999/notify'
 
 configFileList='configFiles.list'
 echo "-------------------------"
