@@ -32,8 +32,7 @@ class WuwuhanmanFetcher(BaseFetcher):
         return h1.string
 
     def parseComicWebToGetChapterLinks(self, soup):
-        spans = soup.find_all('span', attrs = {'class': 'itemcata-title'})
-        aList = list(map(lambda x:x.parent, spans))
+        aList = soup.find_all('a', attrs = {'class': 'sp-chapter-item'})
         finalChapterLink = ''
         maxChapterIdx = -1
         chapterLinks = {}
@@ -213,6 +212,8 @@ class WuwuhanmanFetcher(BaseFetcher):
 if __name__ == '__main__':
     a = WuwuhanmanFetcher('', '')
     a.setInternalParameters('https://www.55comic.com/book/4966', '繼母與繼姐', 119)
-    a.fetchImagesFromChapterPage('https://www.55comic.com/free-chapter/42781?t=20260415', 117, "/home/kzhang/github/comicViewer/comic/00-连载中/繼母與繼姐/117/")
+    links = a.getChapterLinks()
+    print(links)
+    a.fetchImagesFromChapterPage('https://www.55comic.com/free-chapter/43158?t=20260415', 120, "/home/kzhang/github/comicViewer/comic/00-连载中/繼母與繼姐/120/")
     #a.setInternalParameters('https://www.55comic.com/free-chapter/42781?t=20260415')
     #a.downloadImg('https://bmigmij-wuwu.sqxxov.com/break_2/static/upload/book/4966/42781/3078938.jpg', 'a.jpg', '')
