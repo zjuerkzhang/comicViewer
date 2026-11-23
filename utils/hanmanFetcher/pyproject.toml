@@ -1,0 +1,14 @@
+[project]
+name = "hanmanfetcher"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "bs4>=0.0.2",
+    "html5lib>=1.1",
+    "pillow>=12.3.0",
+    "playwright>=1.65.2",
+    "pycryptodomex>=3.24.2",
+    "requests>=2.34.2",
+]

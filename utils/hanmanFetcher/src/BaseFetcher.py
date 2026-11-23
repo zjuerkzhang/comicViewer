@@ -8,6 +8,7 @@ import os
 import json
 import time
 import random
+from playwright.sync_api import sync_playwright
 
 class BaseFetcher(object):
     @classmethod
@@ -25,7 +26,9 @@ class BaseFetcher(object):
         self.comicRootPath = comicRootPath
         self.webSiteName = webSiteName
         self.proxy = None
-
+        self.playwright = sync_playwright().start()
+        self.browser = self.playwright.chromium.connect_over_cdp("http://127.0.0.1:9222")
+        self.page = self.browser.new_page()
 
 
     def getSearchRegexPattern(self):
@@ -93,11 +96,27 @@ class BaseFetcher(object):
         return soup
 
 
+    def getValidSoupFromLinkByPlaywright(self, link, keywords = ''):
+        try:
+            self.page.goto(link)
+            self.page.wait_for_selector(f"text={keywords}", timeout=30000)
+            content = self.page.content()
+        except:
+            self.logger.error("Exception occurs when fetching content from [%s] by playwright" % link)
+            return None
+        soup = bs(content, 'html5lib')
+        if soup == None:
+            self.logger.error("Fail to parse content from [%s] by playwright" % link)
+        return soup
+
+
     def getComicNameFromMainLink(self):
         soup = self.getValidSoupFromLink(self.comicLink)
         if soup == None:
-            self.logger.error("Fail to get soup from comic web [%s]" % self.comicLink)
-            return ''
+            soup = self.getValidSoupFromLinkByPlaywright(self.comicLink, "開始閱讀")
+            if soup == None:
+                self.logger.error("Fail to get soup from comic web [%s]" % self.comicLink)
+                return ''
         return self.parseComicWebToGetComicName(soup)
 
     def parseComicWebToGetComicName(self, soup):
@@ -107,8 +126,10 @@ class BaseFetcher(object):
     def getChapterLinks(self):
         soup = self.getValidSoupFromLink(self.comicLink)
         if soup == None:
-            self.logger.error("Fail to get soup from comic web [%s]" % self.comicLink)
-            return None
+            soup = self.getValidSoupFromLinkByPlaywright(self.comicLink, self.comicName)
+            if soup == None:
+                self.logger.error("Fail to get soup from comic web [%s]" % self.comicLink)
+                return None
         chapterLinks = self.parseComicWebToGetChapterLinks(soup)
         if chapterLinks == None or len(chapterLinks.keys()) == 0:
             self.logger.error("No valid chapter links from comic web [%s]" % self.comicLink)
@@ -122,8 +143,10 @@ class BaseFetcher(object):
     def getImageLinksFromChapterPage(self, chapterLink):
         soup = self.getValidSoupFromLink(chapterLink)
         if soup == None:
-            self.logger.error("Fail to get soup from chapter web [%s]" % chapterLink)
-            return []
+            soup = self.getValidSoupFromLinkByPlaywright(chapterLink, "目錄")
+            if soup == None:
+                self.logger.error("Fail to get soup from chapter web [%s]" % chapterLink)
+                return []
         imgLinks = self.parseChapterWebToGetImageLinks(soup)
         if len(imgLinks) == 0:
             self.logger.error("No valid image links from chapter web [%s]" % chapterLink)

@@ -71,7 +71,7 @@ def updateAllComics():
     comicRootPath = jsonConfig['targetDir']
     comicList = jsonConfig['comics']
     for key in gFetcherMapping.keys():
-        if key == 'akhm' or key == 'kamu': # or key == 'wuwu': # or key == 'hmk':
+        if key == 'akhm' or key == 'kamu' or key == 'hmk': # or key == 'wuwu': # :
             continue
         fetcherClass = gFetcherMapping[key]['fetcher']
         fetcher = fetcherClass(comicRootPath, gFetcherMapping[key]['name'])

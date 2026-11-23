@@ -5,3 +5,4 @@ utils/*/log*
 utils/*.log
 utils/clImages/configFiles.list
 __pycache__
+.venv

@@ -15,6 +15,9 @@ cd $fileDir
 #fi
 
 mkdir -p log
-python3 src/main.py >> log/shell.log 2>&1
+
+./cdp-tunnel.sh start
+/home/kzhang/.local/bin/uv run python3 src/main.py >> log/shell.log 2>&1
+./cdp-tunnel.sh stop
 
 /home/kzhang/github/comicViewer/utils/hanmanFetcher/log/dlImgsByFailedLog.sh
